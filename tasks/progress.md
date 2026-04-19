@@ -5,9 +5,9 @@ This tracker is the execution map for the Shelf MVP backlog derived from [docs/p
 ## Progress Summary
 
 - Total tasks: 18
-- Not Started: 2
+- Not Started: 0
 - In Progress: 0
-- Done: 16
+- Done: 18
 - Blocked: 0
 
 ## Milestones
@@ -44,8 +44,8 @@ This tracker is the execution map for the Shelf MVP backlog derived from [docs/p
 | 014 | Embedding worker and Chroma persistence | Semantic Layer | 008, 013 | DN | Local embedding pipeline with schema/version awareness |
 | 015 | Hybrid query orchestration and ranking | Semantic Layer | 006, 014 | DN | Parallel FTS and vector retrieval merged into document results |
 | 016 | Search UI, result actions, and indexing status UX | Product UX | 003, 004, 009, 015 | DN | User-facing search flow, snippets, actions, and status surfaces |
-| 017 | Observability, rebuild tools, and consistency audits | Hardening | 005, 008, 014, 015 | NS | Logs, metrics, repair utilities, and store-consistency checks |
-| 018 | Performance tuning, throttling, and packaging validation | Hardening | 016, 017 | NS | Production-readiness checks for responsiveness, battery, and distribution |
+| 017 | Observability, rebuild tools, and consistency audits | Hardening | 005, 008, 014, 015 | DN | Logs, metrics, repair utilities, and store-consistency checks |
+| 018 | Performance tuning, throttling, and packaging validation | Hardening | 016, 017 | DN | Production-readiness checks for responsiveness, battery, and distribution |
 
 ## Recommended Execution Order
 

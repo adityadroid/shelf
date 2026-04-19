@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
 from dataclasses import dataclass
 
@@ -48,17 +47,10 @@ class ShelfApplication:
         self.scanner_state = ScannerStateRepository(self.connection)
         self.metrics_repository = MetricsRepository(self.connection)
         self.embedding_service = EmbeddingService(services.paths)
-        self.search_service = SearchService(self.connection, self.embedding_service)
-        self.worker = IndexingWorker(
-            self.folder_repository,
-            self.document_repository,
-            self.job_repository,
-            self.failure_repository,
-            self.metrics_repository,
-            self.embedding_service,
-        )
-        self.worker_loop = WorkerLoop(self.worker, max_parallelism=max(1, min(2, os.cpu_count() or 1)))
-        self.watcher = WatcherService(self.folder_repository, self.job_repository)
+        self.search_service = SearchService(self.database, self.embedding_service)
+        self.worker = IndexingWorker(self.database, self.embedding_service)
+        self.worker_loop = WorkerLoop(self.worker, max_parallelism=1)
+        self.watcher = WatcherService(self.database)
         self.reconciliation = ReconciliationService(
             self.folder_repository,
             self.document_repository,
@@ -69,6 +61,7 @@ class ShelfApplication:
     def start(self) -> None:
         self.sync_settings()
         self.reconciliation.run()
+        self.connection.commit()
         self.worker_loop.start()
         self.watcher.refresh([folder.path for folder in self.settings.monitored_folders if folder.accessible])
         LOGGER.info("Shelf services started")
@@ -87,16 +80,17 @@ class ShelfApplication:
         self.settings = settings
         self.sync_settings()
         self.reconciliation.run()
-        self.watcher.refresh([folder.path for folder in self.settings.monitored_folders if folder.accessible])
         self.connection.commit()
+        self.watcher.refresh([folder.path for folder in self.settings.monitored_folders if folder.accessible])
 
     def search(self, query: str):
         return self.search_service.search(query)
 
     def status(self) -> AppStatus:
-        document_count = self.connection.execute("SELECT COUNT(*) AS total FROM documents").fetchone()["total"]
-        job_stats = self.job_repository.stats()
-        failure_count = self.connection.execute("SELECT COUNT(*) AS total FROM failures").fetchone()["total"]
+        with self.database.connect() as connection:
+            document_count = connection.execute("SELECT COUNT(*) AS total FROM documents").fetchone()["total"]
+            job_stats = JobRepository(connection).stats()
+            failure_count = connection.execute("SELECT COUNT(*) AS total FROM failures").fetchone()["total"]
         embedder = self.embedding_service._embedder
         return AppStatus(
             indexed_documents=document_count,
@@ -106,7 +100,8 @@ class ShelfApplication:
         )
 
     def recent_failures(self) -> list[str]:
-        return [row["message"] for row in self.failure_repository.list_recent()]
+        with self.database.connect() as connection:
+            return [row["message"] for row in FailureRepository(connection).list_recent()]
 
     def open_file(self, path: str) -> None:
         subprocess.run(["open", path], check=False)

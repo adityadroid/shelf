@@ -5,6 +5,7 @@ from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler, FileSystemMovedEvent
 from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from shelf.core.models import SUPPORTED_EXTENSIONS
 from shelf.indexing.models import JobType
@@ -16,10 +17,9 @@ def is_supported_path(path: str) -> bool:
 
 
 class QueueingEventHandler(FileSystemEventHandler):
-    def __init__(self, folder_repository: FolderRepository, job_repository: JobRepository) -> None:
+    def __init__(self, database) -> None:
         super().__init__()
-        self.folder_repository = folder_repository
-        self.job_repository = job_repository
+        self.database = database
         self._recent: dict[str, str] = {}
         self._lock = threading.Lock()
 
@@ -36,27 +36,31 @@ class QueueingEventHandler(FileSystemEventHandler):
                 return
             self._recent[path] = event_key
 
-        folder_id = self.folder_repository.get_id_for_path(path)
-        if isinstance(event, FileSystemMovedEvent):
-            self.job_repository.enqueue(
-                JobType.MOVE,
-                str(Path(event.dest_path).resolve()),
-                old_path=path,
-                folder_id=folder_id,
-            )
-            return
+        with self.database.connect() as connection:
+            folder_repository = FolderRepository(connection)
+            job_repository = JobRepository(connection)
+            folder_id = folder_repository.get_id_for_path(path)
+            if isinstance(event, FileSystemMovedEvent):
+                job_repository.enqueue(
+                    JobType.MOVE,
+                    str(Path(event.dest_path).resolve()),
+                    old_path=path,
+                    folder_id=folder_id,
+                )
+                connection.commit()
+                return
 
-        if event.event_type == "deleted":
-            self.job_repository.enqueue(JobType.DELETE, path, folder_id=folder_id)
-        else:
-            self.job_repository.enqueue(JobType.UPSERT, path, folder_id=folder_id)
+            if event.event_type == "deleted":
+                job_repository.enqueue(JobType.DELETE, path, folder_id=folder_id)
+            else:
+                job_repository.enqueue(JobType.UPSERT, path, folder_id=folder_id)
+            connection.commit()
 
 
 class WatcherService:
-    def __init__(self, folder_repository: FolderRepository, job_repository: JobRepository) -> None:
-        self.folder_repository = folder_repository
-        self.job_repository = job_repository
-        self.observer = Observer()
+    def __init__(self, database) -> None:
+        self.database = database
+        self.observer = PollingObserver()
         self._scheduled_paths: set[str] = set()
 
     def refresh(self, paths: list[str]) -> None:
@@ -64,8 +68,8 @@ class WatcherService:
         if new_paths == self._scheduled_paths:
             return
         self.stop()
-        self.observer = Observer()
-        handler = QueueingEventHandler(self.folder_repository, self.job_repository)
+        self.observer = PollingObserver()
+        handler = QueueingEventHandler(self.database)
         for path in new_paths:
             self.observer.schedule(handler, path, recursive=True)
         if new_paths:

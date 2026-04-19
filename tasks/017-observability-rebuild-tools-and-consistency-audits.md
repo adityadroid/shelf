@@ -1,6 +1,6 @@
 # Task 017: Observability, Rebuild Tools, and Consistency Audits
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P1`
 - Depends On: `005`, `008`, `014`, `015`
 - Last Updated: `2026-04-19`

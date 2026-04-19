@@ -26,70 +26,76 @@ LOGGER = logging.getLogger(__name__)
 class IndexingWorker:
     def __init__(
         self,
-        folder_repository: FolderRepository,
-        document_repository: DocumentRepository,
-        job_repository: JobRepository,
-        failure_repository: FailureRepository,
-        metrics_repository: MetricsRepository,
+        database,
         embedding_service: EmbeddingService,
     ) -> None:
-        self.folder_repository = folder_repository
-        self.document_repository = document_repository
-        self.job_repository = job_repository
-        self.failure_repository = failure_repository
-        self.metrics_repository = metrics_repository
+        self.database = database
         self.embedding_service = embedding_service
         self.parsers = ParserRegistry()
         self.chunker = DeterministicChunker()
 
     def process_one(self) -> bool:
-        job = self.job_repository.claim_next()
-        if job is None:
-            return False
+        with self.database.connect() as connection:
+            folder_repository = FolderRepository(connection)
+            document_repository = DocumentRepository(connection)
+            job_repository = JobRepository(connection)
+            failure_repository = FailureRepository(connection)
+            metrics_repository = MetricsRepository(connection)
+            job = job_repository.claim_next()
+            if job is None:
+                return False
 
-        try:
-            event_type = JobType(job["event_type"])
-            if event_type is JobType.DELETE:
-                self._handle_delete(job["path"])
-            elif event_type is JobType.MOVE:
-                if job["old_path"]:
-                    self._handle_delete(job["old_path"])
-                self._handle_upsert(job["path"])
-            else:
-                self._handle_upsert(job["path"])
-        except Exception as exc:
-            LOGGER.exception("Job failed: %s", exc)
-            self.failure_repository.record("job", str(exc), ref_id=str(job["id"]))
-            self.job_repository.mark_failed(job["id"], str(exc), int(job["attempt_count"]) + 1)
+            try:
+                event_type = JobType(job["event_type"])
+                if event_type is JobType.DELETE:
+                    self._handle_delete(document_repository, job["path"])
+                elif event_type is JobType.MOVE:
+                    if job["old_path"]:
+                        self._handle_delete(document_repository, job["old_path"])
+                    self._handle_upsert(folder_repository, document_repository, failure_repository, job["path"])
+                else:
+                    self._handle_upsert(folder_repository, document_repository, failure_repository, job["path"])
+            except Exception as exc:
+                LOGGER.exception("Job failed: %s", exc)
+                failure_repository.record("job", str(exc), ref_id=str(job["id"]))
+                job_repository.mark_failed(job["id"], str(exc), int(job["attempt_count"]) + 1)
+                connection.commit()
+                return True
+
+            job_repository.mark_done(job["id"])
+            metrics_repository.set("last_processed_job", job["path"])
+            connection.commit()
             return True
 
-        self.job_repository.mark_done(job["id"])
-        self.metrics_repository.set("last_processed_job", job["path"])
-        return True
-
-    def _handle_delete(self, path: str) -> None:
-        document_id = self.document_repository.delete_by_path(path)
+    def _handle_delete(self, document_repository: DocumentRepository, path: str) -> None:
+        document_id = document_repository.delete_by_path(path)
         if document_id:
             self.embedding_service.delete_document(document_id)
 
-    def _handle_upsert(self, path: str) -> None:
+    def _handle_upsert(
+        self,
+        folder_repository: FolderRepository,
+        document_repository: DocumentRepository,
+        failure_repository: FailureRepository,
+        path: str,
+    ) -> None:
         file_path = Path(path)
         if not file_path.exists():
-            self._handle_delete(path)
+            self._handle_delete(document_repository, path)
             return
 
         parser_result = self.parsers.parse(file_path)
-        existing = self.document_repository.get_by_path(path)
+        existing = document_repository.get_by_path(path)
         current_fast_fingerprint = fast_fingerprint(file_path)
         if existing and existing["fast_fingerprint"] == current_fast_fingerprint:
             return
 
         content_hash = sha256_for_file(file_path)
         document_id = str(existing["id"]) if existing else new_document_id()
-        folder_id = self.folder_repository.get_id_for_path(path)
+        folder_id = folder_repository.get_id_for_path(path)
         chunks = self.chunker.chunk(document_id, parser_result)
         embedding_model, embedding_version = self.embedding_service.upsert_chunks(document_id, chunks)
-        self.document_repository.upsert_document(
+        document_repository.upsert_document(
             document_id=document_id,
             folder_id=folder_id,
             parsed=parser_result,
@@ -99,9 +105,9 @@ class IndexingWorker:
             embedding_model=embedding_model,
             embedding_version=embedding_version,
         )
-        self.document_repository.replace_chunks(document_id, chunks, embedding_model, embedding_version)
+        document_repository.replace_chunks(document_id, chunks, embedding_model, embedding_version)
         if parser_result.diagnostics:
-            self.failure_repository.record(
+            failure_repository.record(
                 "parser",
                 "\n".join(parser_result.diagnostics),
                 ref_id=document_id,

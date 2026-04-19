@@ -49,7 +49,8 @@ def test_worker_indexes_docx_end_to_end(tmp_path):
     embedding = StubEmbeddingService()
 
     jobs.enqueue(JobType.UPSERT, str(doc_path.resolve()), folder_id=folders.get_id_for_path(str(doc_path.resolve())))
-    worker = IndexingWorker(folders, documents, jobs, failures, metrics, embedding)
+    connection.commit()
+    worker = IndexingWorker(database, embedding)
 
     assert worker.process_one() is True
     row = documents.get_by_path(str(doc_path.resolve()))

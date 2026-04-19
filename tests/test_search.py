@@ -49,10 +49,11 @@ def test_search_prefers_exact_filename_matches(tmp_path):
         content_hash="hash",
         chunk_schema_version="v1",
     )
+    connection.commit()
     stub = StubEmbeddingService()
     stub.document_id = document_id
 
-    service = SearchService(connection, stub)
+    service = SearchService(database, stub)
     results = service.search("alpha")
 
     assert results

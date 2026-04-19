@@ -42,7 +42,11 @@ class SentenceTransformerEmbedder:
             return self._model
         from sentence_transformers import SentenceTransformer
 
-        self._model = SentenceTransformer(self.model_name, cache_folder=str(self.paths.models_dir))
+        self._model = SentenceTransformer(
+            self.model_name,
+            cache_folder=str(self.paths.models_dir),
+            local_files_only=True,
+        )
         return self._model
 
     def encode(self, texts: list[str]) -> list[list[float]]:
