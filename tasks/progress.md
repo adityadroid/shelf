@@ -67,3 +67,5 @@ When a task changes state, update:
 - the `Status` column in this tracker,
 - the `Last Updated` field inside the task file,
 - any newly discovered blockers, risks, or dependency changes.
+
+When a task is finished, updating this progress tracker is mandatory before the work is considered complete.

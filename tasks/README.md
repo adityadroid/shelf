@@ -7,6 +7,7 @@ This folder turns the product and engineering plans into an execution-ready back
 - Start from [progress.md](/Users/adityadroid/VSCodeProjects/ai/shelf/tasks/progress.md) to understand ordering, dependencies, and overall status.
 - Use one task file at a time as the implementation brief for that slice of work.
 - Update the tracker and the matching task file when a task starts, is blocked, or completes.
+- Treat updating [progress.md](/Users/adityadroid/VSCodeProjects/ai/shelf/tasks/progress.md) after task completion as required workflow, not optional cleanup.
 - Prefer finishing tasks in sequence unless dependencies explicitly allow parallel work.
 
 ## Status Conventions
