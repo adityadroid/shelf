@@ -1,6 +1,6 @@
 # Task 008: Durable Job Queue and Worker Orchestration
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `005`, `007`
 - Last Updated: `2026-04-19`

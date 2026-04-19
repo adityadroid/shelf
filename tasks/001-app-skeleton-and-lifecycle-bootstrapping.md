@@ -1,6 +1,6 @@
 # Task 001: App Skeleton and Lifecycle Bootstrapping
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `None`
 - Last Updated: `2026-04-19`

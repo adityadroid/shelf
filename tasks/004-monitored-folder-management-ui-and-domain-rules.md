@@ -1,6 +1,6 @@
 # Task 004: Monitored Folder Management UI and Domain Rules
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `002`, `003`
 - Last Updated: `2026-04-19`

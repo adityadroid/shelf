@@ -5,10 +5,10 @@ This tracker is the execution map for the Shelf MVP backlog derived from [docs/p
 ## Progress Summary
 
 - Total tasks: 18
-- Not Started: 18
+- Not Started: 2
 - In Progress: 0
+- Done: 16
 - Blocked: 0
-- Done: 0
 
 ## Milestones
 
@@ -28,22 +28,22 @@ This tracker is the execution map for the Shelf MVP backlog derived from [docs/p
 
 | ID | Task | Phase | Depends On | Status | Primary Deliverable |
 | --- | --- | --- | --- | --- | --- |
-| 001 | App skeleton and lifecycle bootstrapping | Foundation | None | NS | Launchable PySide6 app shell with clear app/core boundaries |
-| 002 | Local app directories and settings persistence | Foundation | 001 | NS | Stable local storage paths and settings service |
-| 003 | Default folders, permissions, and onboarding flow | Foundation | 001, 002 | NS | First-run flow for default monitored folders and permission guidance |
-| 004 | Monitored folder management UI and domain rules | Foundation | 002, 003 | NS | Add/remove folder UX with duplicate and access validation |
-| 005 | SQLite schema, migrations, and repository layer | Retrieval Core | 002 | NS | Durable metadata schema for folders, documents, jobs, state, and failures |
-| 006 | Exact search index with SQLite FTS5 | Retrieval Core | 005 | NS | Filename and content search with ranked FTS queries |
-| 007 | File watcher and event normalization | Retrieval Core | 004, 005 | NS | `watchdog` ingestion path that emits normalized jobs |
-| 008 | Durable job queue and worker orchestration | Retrieval Core | 005, 007 | NS | Persistent job claiming, retries, backoff, and worker execution model |
-| 009 | Baseline scan and startup reconciliation | Retrieval Core | 004, 005, 008 | NS | Delta-based scan bootstrap and restart recovery |
-| 010 | Parser framework and normalized document model | Retrieval Core | 005, 008 | NS | Stable parser interface and internal document representation |
-| 011 | PDF and DOCX parsing pipeline | Retrieval Core | 010 | NS | Working `.pdf` and `.docx` extraction with parser diagnostics |
-| 012 | Legacy DOC parsing and failure handling | Retrieval Core | 010, 011 | NS | Safe `antiword` integration with timeout and error capture |
-| 013 | Fingerprinting and deterministic chunking | Semantic Layer | 010, 011, 012 | NS | Change detection and chunk records ready for embedding |
-| 014 | Embedding worker and Chroma persistence | Semantic Layer | 008, 013 | NS | Local embedding pipeline with schema/version awareness |
-| 015 | Hybrid query orchestration and ranking | Semantic Layer | 006, 014 | NS | Parallel FTS and vector retrieval merged into document results |
-| 016 | Search UI, result actions, and indexing status UX | Product UX | 003, 004, 009, 015 | NS | User-facing search flow, snippets, actions, and status surfaces |
+| 001 | App skeleton and lifecycle bootstrapping | Foundation | None | DN | Launchable PySide6 app shell with clear app/core boundaries |
+| 002 | Local app directories and settings persistence | Foundation | 001 | DN | Stable local storage paths and settings service |
+| 003 | Default folders, permissions, and onboarding flow | Foundation | 001, 002 | DN | First-run flow for default monitored folders and permission guidance |
+| 004 | Monitored folder management UI and domain rules | Foundation | 002, 003 | DN | Add/remove folder UX with duplicate and access validation |
+| 005 | SQLite schema, migrations, and repository layer | Retrieval Core | 002 | DN | Durable metadata schema for folders, documents, jobs, state, and failures |
+| 006 | Exact search index with SQLite FTS5 | Retrieval Core | 005 | DN | Filename and content search with ranked FTS queries |
+| 007 | File watcher and event normalization | Retrieval Core | 004, 005 | DN | `watchdog` ingestion path that emits normalized jobs |
+| 008 | Durable job queue and worker orchestration | Retrieval Core | 005, 007 | DN | Persistent job claiming, retries, backoff, and worker execution model |
+| 009 | Baseline scan and startup reconciliation | Retrieval Core | 004, 005, 008 | DN | Delta-based scan bootstrap and restart recovery |
+| 010 | Parser framework and normalized document model | Retrieval Core | 005, 008 | DN | Stable parser interface and internal document representation |
+| 011 | PDF and DOCX parsing pipeline | Retrieval Core | 010 | DN | Working `.pdf` and `.docx` extraction with parser diagnostics |
+| 012 | Legacy DOC parsing and failure handling | Retrieval Core | 010, 011 | DN | Safe `antiword` integration with timeout and error capture |
+| 013 | Fingerprinting and deterministic chunking | Semantic Layer | 010, 011, 012 | DN | Change detection and chunk records ready for embedding |
+| 014 | Embedding worker and Chroma persistence | Semantic Layer | 008, 013 | DN | Local embedding pipeline with schema/version awareness |
+| 015 | Hybrid query orchestration and ranking | Semantic Layer | 006, 014 | DN | Parallel FTS and vector retrieval merged into document results |
+| 016 | Search UI, result actions, and indexing status UX | Product UX | 003, 004, 009, 015 | DN | User-facing search flow, snippets, actions, and status surfaces |
 | 017 | Observability, rebuild tools, and consistency audits | Hardening | 005, 008, 014, 015 | NS | Logs, metrics, repair utilities, and store-consistency checks |
 | 018 | Performance tuning, throttling, and packaging validation | Hardening | 016, 017 | NS | Production-readiness checks for responsiveness, battery, and distribution |
 

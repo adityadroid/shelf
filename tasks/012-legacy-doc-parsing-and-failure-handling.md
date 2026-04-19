@@ -1,6 +1,6 @@
 # Task 012: Legacy DOC Parsing and Failure Handling
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P1`
 - Depends On: `010`, `011`
 - Last Updated: `2026-04-19`

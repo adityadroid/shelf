@@ -1,6 +1,6 @@
 # Task 009: Baseline Scan and Startup Reconciliation
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `004`, `005`, `008`
 - Last Updated: `2026-04-19`

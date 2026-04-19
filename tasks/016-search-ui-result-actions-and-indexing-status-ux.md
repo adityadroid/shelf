@@ -1,6 +1,6 @@
 # Task 016: Search UI, Result Actions, and Indexing Status UX
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `003`, `004`, `009`, `015`
 - Last Updated: `2026-04-19`

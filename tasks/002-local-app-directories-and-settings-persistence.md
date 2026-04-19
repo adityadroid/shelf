@@ -1,6 +1,6 @@
 # Task 002: Local App Directories and Settings Persistence
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `001`
 - Last Updated: `2026-04-19`

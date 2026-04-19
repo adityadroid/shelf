@@ -1,6 +1,6 @@
 # Task 007: File Watcher and Event Normalization
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `004`, `005`
 - Last Updated: `2026-04-19`

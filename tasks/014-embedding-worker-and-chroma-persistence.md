@@ -1,6 +1,6 @@
 # Task 014: Embedding Worker and Chroma Persistence
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P1`
 - Depends On: `008`, `013`
 - Last Updated: `2026-04-19`

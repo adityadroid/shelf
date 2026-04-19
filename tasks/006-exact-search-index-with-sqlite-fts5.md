@@ -1,6 +1,6 @@
 # Task 006: Exact Search Index With SQLite FTS5
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `005`
 - Last Updated: `2026-04-19`

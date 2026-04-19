@@ -1,6 +1,6 @@
 # Task 013: Fingerprinting and Deterministic Chunking
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P1`
 - Depends On: `010`, `011`, `012`
 - Last Updated: `2026-04-19`

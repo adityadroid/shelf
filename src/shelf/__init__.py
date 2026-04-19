@@ -1,0 +1,2 @@
+"""Shelf application package."""
+
