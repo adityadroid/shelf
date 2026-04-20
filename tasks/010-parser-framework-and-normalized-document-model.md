@@ -1,6 +1,6 @@
 # Task 010: Parser Framework and Normalized Document Model
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `005`, `008`
 - Last Updated: `2026-04-19`

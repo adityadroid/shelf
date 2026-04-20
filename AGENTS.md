@@ -117,6 +117,19 @@ Agents should run the most relevant validation they can before finishing. Exampl
 
 If a test cannot be run, the agent must say so plainly in its final summary and in the plan record.
 
+## Task Backlog Maintenance
+
+When work maps to the execution backlog in `/tasks`, agents must keep the backlog current.
+
+Required behavior:
+
+- When a task starts, update `/tasks/progress.md` and the corresponding task file to show `In Progress`.
+- When a task is blocked, update `/tasks/progress.md` and the corresponding task file to show `Blocked`, with a short blocker note when useful.
+- When a task is finished, agents must update the progress board in `/tasks/progress.md` and mark the corresponding task file as `Done`.
+- If a completed change affects sequencing, dependencies, or newly discovered follow-up work, update the backlog documents before committing.
+
+Do not treat the progress board as optional documentation. It is part of the repository workflow.
+
 ## Planning Record Requirement
 
 Every agent must leave a task record in `/plans` for any finalized change set that is about to be committed.
@@ -228,6 +241,7 @@ Before committing, agents should verify:
 - relevant tests or checks were run, or the gap is documented
 - user-visible behavior is coherent
 - persistence and indexing changes are safe
+- `/tasks/progress.md` and the relevant task file reflect the completed task state
 - a `/plans` record has been created for the finalized task
 
 ## When Instructions Conflict

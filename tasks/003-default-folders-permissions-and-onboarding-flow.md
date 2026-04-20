@@ -1,6 +1,6 @@
 # Task 003: Default Folders, Permissions, and Onboarding Flow
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `001`, `002`
 - Last Updated: `2026-04-19`

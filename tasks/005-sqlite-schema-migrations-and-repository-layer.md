@@ -1,6 +1,6 @@
 # Task 005: SQLite Schema, Migrations, and Repository Layer
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `002`
 - Last Updated: `2026-04-19`

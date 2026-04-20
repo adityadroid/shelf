@@ -1,6 +1,6 @@
 # Task 011: PDF and DOCX Parsing Pipeline
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P0`
 - Depends On: `010`
 - Last Updated: `2026-04-19`

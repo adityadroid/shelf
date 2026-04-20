@@ -1,6 +1,6 @@
 # Task 015: Hybrid Query Orchestration and Ranking
 
-- Status: `Not Started`
+- Status: `Done`
 - Priority: `P1`
 - Depends On: `006`, `014`
 - Last Updated: `2026-04-19`
