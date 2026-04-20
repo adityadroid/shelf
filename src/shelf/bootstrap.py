@@ -54,9 +54,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     try:
+        from PySide6.QtGui import QIcon
         from PySide6.QtWidgets import QApplication, QMessageBox
 
-        from shelf.ui.main_window import MainWindow
+        from shelf.ui.main_window import ICON_PATH, MainWindow
         from shelf.ui.onboarding import OnboardingDialog
     except ModuleNotFoundError as exc:
         print(
@@ -68,7 +69,10 @@ def main(argv: list[str] | None = None) -> int:
 
     application = QApplication(argv or sys.argv)
     application.setApplicationName("Shelf")
+    application.setApplicationDisplayName("Shelf")
     application.setOrganizationName("Shelf")
+    if ICON_PATH.exists():
+        application.setWindowIcon(QIcon(str(ICON_PATH)))
 
     if not settings.onboarding_completed:
         dialog = OnboardingDialog(settings.monitored_folders)

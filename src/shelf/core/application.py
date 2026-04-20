@@ -99,6 +99,9 @@ class ShelfApplication:
     def search(self, query: str):
         return self.search_service.search(query)
 
+    def live_search(self, query: str, limit: int = 8):
+        return self.search_service.exact_search(query, limit=limit)
+
     def status(self) -> AppStatus:
         with self.database.connect() as connection:
             document_count = connection.execute("SELECT COUNT(*) AS total FROM documents").fetchone()["total"]
@@ -156,6 +159,9 @@ class ShelfApplication:
 
     def open_file(self, path: str) -> None:
         subprocess.run(["open", path], check=False)
+
+    def open_in_preview(self, path: str) -> None:
+        subprocess.run(["open", "-a", "Preview", path], check=False)
 
     def reveal_file(self, path: str) -> None:
         subprocess.run(["open", "-R", path], check=False)

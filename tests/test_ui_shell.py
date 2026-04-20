@@ -3,11 +3,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QLabel, QKeySequenceEdit, QToolButton
 
 from shelf.core.application import AppStatus, FailureRecord
 from shelf.core.models import AppSettings, MonitoredFolder
 from shelf.indexing.models import SearchResult
-from shelf.ui.main_window import MainWindow, SettingsDialog
+from shelf.ui.main_window import ICON_PATH, MainWindow, SettingsDialog
 
 
 class StubSettingsService:
@@ -21,13 +23,19 @@ class StubSettingsService:
 class StubController:
     def __init__(self) -> None:
         self.search_queries: list[str] = []
+        self.live_search_queries: list[str] = []
         self.opened_paths: list[str] = []
+        self.previewed_paths: list[str] = []
         self.revealed_paths: list[str] = []
         self.maintenance_calls: list[tuple[str, str | None]] = []
         self.refreshed_settings: list[AppSettings] = []
 
     def search(self, query: str) -> list[SearchResult]:
         self.search_queries.append(query)
+        return self.live_search(query)
+
+    def live_search(self, query: str) -> list[SearchResult]:
+        self.live_search_queries.append(query)
         return [
             SearchResult(
                 document_id="doc-1",
@@ -43,6 +51,9 @@ class StubController:
 
     def open_file(self, path: str) -> None:
         self.opened_paths.append(path)
+
+    def open_in_preview(self, path: str) -> None:
+        self.previewed_paths.append(path)
 
     def reveal_file(self, path: str) -> None:
         self.revealed_paths.append(path)
@@ -88,7 +99,7 @@ def build_services_stub() -> SimpleNamespace:
     )
 
 
-def test_main_window_is_search_first_and_opens_results(qtbot):
+def test_main_window_shows_live_results_popup(qtbot):
     services = build_services_stub()
     settings = AppSettings(
         onboarding_completed=True,
@@ -101,19 +112,53 @@ def test_main_window_is_search_first_and_opens_results(qtbot):
 
     window = MainWindow(services, settings, controller)
     qtbot.addWidget(window)
+    window.show()
 
-    assert window.search_input.placeholderText() == "Search filenames and document text"
-    assert window.results_count_label.text() == "Waiting for a search"
+    assert window.search_input.placeholderText() == "Search files using natural language or keywords"
+    assert window.windowTitle() == "Shelf"
+    assert window.windowFlags() & Qt.WindowType.FramelessWindowHint
+    assert window.statusBar().isHidden()
+    settings_button = window.findChild(QToolButton, "SettingsIconButton")
+    assert settings_button is not None
 
-    window.search_input.setText("alpha")
-    qtbot.wait(250)
+    window.search_input.setFocus()
+    qtbot.keyClick(window.search_input, "a")
+    qtbot.wait(150)
+    assert controller.live_search_queries == []
+    assert window.search_input.text() == "a"
+    assert window.search_input.hasFocus()
 
-    assert controller.search_queries[-1] == "alpha"
-    assert len(window.result_cards) == 1
-    assert window.results_count_label.text() == '1 results for "alpha"'
+    qtbot.keyClicks(window.search_input, "lpha")
+    qtbot.waitUntil(lambda: controller.live_search_queries == ["alpha"])
+    qtbot.waitUntil(lambda: window.results_popup.isVisible())
+    qtbot.waitUntil(lambda: len(window.results_popup.result_cards) == 1)
+    assert len(window.results_popup.result_cards) == 1
+    assert window.search_input.hasFocus()
+    assert window.results_popup.width() == window.composer_shell.width()
+    assert window.results_popup.result_cards[0].reveal_button.text() == "Reveal"
+    path_labels = window.results_popup.result_cards[0].findChildren(QLabel)
+    assert any(label.text() == "/tmp" for label in path_labels)
 
-    qtbot.mouseClick(window.result_cards[0], Qt.MouseButton.LeftButton)
-    assert controller.opened_paths == ["/tmp/alpha-report.pdf"]
+    qtbot.keyClick(window.search_input, Qt.Key.Key_Down)
+    assert window.results_popup.selected_index == 0
+    assert window.results_popup.result_cards[0].property("active") is True
+    qtbot.keyClick(window.search_input, Qt.Key.Key_Return)
+    assert controller.previewed_paths == ["/tmp/alpha-report.pdf"]
+
+    window.show_search_window()
+    window._handle_window_deactivated()
+    assert window.isHidden()
+
+    window.show_search_window()
+    window.open_primary_result()
+    assert controller.previewed_paths == ["/tmp/alpha-report.pdf", "/tmp/alpha-report.pdf"]
+    assert ICON_PATH.exists()
+
+    window.toggle_launcher_window()
+    assert window.isHidden()
+    window.toggle_launcher_window()
+    assert window.isVisible()
+    assert window.y() >= 0
 
 
 def test_settings_dialog_surfaces_maintenance_commands(qtbot):
@@ -129,10 +174,21 @@ def test_settings_dialog_surfaces_maintenance_commands(qtbot):
     qtbot.addWidget(dialog)
 
     assert dialog.windowTitle() == "Shelf Settings"
+    labels = dialog.findChildren(QLabel)
+    assert any(label.text() == "Configure Shelf" for label in labels)
     assert dialog.folder_list.count() == 1
+    assert dialog.documents_pill.text() == "12 indexed"
+    assert dialog.failures_list.count() == 1
+    shortcut_input = dialog.findChild(QKeySequenceEdit)
+    assert shortcut_input is not None
+    assert shortcut_input.keySequence().toString(QKeySequence.SequenceFormat.PortableText) == "Meta+Alt+S"
+
+    shortcut_input.setKeySequence(QKeySequence("Meta+Shift+Space"))
+    dialog.save_launcher_shortcut()
+    assert settings.launcher_shortcut == "Meta+Shift+Space"
 
     dialog.run_command("status")
 
     assert controller.maintenance_calls == [("status", None)]
     assert '"command": "status"' in dialog.maintenance_output.toPlainText()
-    assert refresh_calls == ["refresh"]
+    assert refresh_calls == ["refresh", "refresh"]
