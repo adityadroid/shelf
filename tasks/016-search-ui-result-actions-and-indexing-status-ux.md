@@ -3,7 +3,7 @@
 - Status: `Done`
 - Priority: `P0`
 - Depends On: `003`, `004`, `009`, `015`
-- Last Updated: `2026-04-19`
+- Last Updated: `2026-04-20`
 
 ## Objective
 
@@ -47,8 +47,17 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 - Manual UX checks for fast typing, no-results, partial indexing, and result-action flows.
 - Add UI or integration tests for key states if practical within the chosen test setup.
 - 2026-04-19 refresh: `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 redesign refresh: shifted the landing view to a chat-style search composer, moved library health into Settings, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 simplification refresh: removed live search from the landing view, reduced the main window to a floating composer plus Settings entry point, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 debounce/focus fix: delayed live search until the user pauses typing, kept the floating results pane from stealing focus, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 visual polish refresh: matched the results popup width to the search pill, tightened scrollbar spacing, added a source-tree app icon, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 launcher settings refresh: added a persisted launcher shortcut preference with `Cmd+Option+S` as the default, fixed the visible app display name to `Shelf`, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 launcher behavior refresh: registered the macOS launcher shortcut to toggle the floating search surface at the top of the screen, rebuilt Settings to use the same floating glass design language as the main view, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 settings polish refresh: replaced the abstract settings header copy with product-facing language, reduced settings transparency for readability, aligned the shortcut field styling with the rest of the floating UI, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-20 search interaction refresh: reduced transparency on the floating search/results surfaces, hid the launcher when it loses focus, added keyboard-only result navigation and activation, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
 
 ## Risks and Notes
 
 - Search UX should prioritize clarity over visual complexity.
 - Progressive updates are helpful, but avoid flicker or misleading state transitions while indexing is still underway.
+- The current shell now favors a single settings entry point over a separate monitor dialog; future expansions should keep that simplified navigation model coherent.
