@@ -2,12 +2,20 @@
 
 Shelf is an offline-first macOS document search app for local documents. It indexes supported files from user-controlled folders, stores all metadata and search state locally, and provides a native desktop UI for fast filename and content search.
 
+The current UI is intentionally search-first: a Spotlight-inspired main window keeps the focus on retrieval, while monitored folders, maintenance controls, and failure diagnostics live in dedicated Settings and Document Monitor surfaces.
+
 ## MVP Scope
 
 - Native macOS desktop app built with PySide6
 - Fully local storage and search
 - Supported formats: `.pdf`, `.doc`, `.docx`
 - Default monitored folders: `~/Documents`, `~/Downloads`, `~/Desktop`
+- Search-first macOS-style glass UI
+- Spotlight-inspired search field with fast result updates
+- Result actions for open, reveal in Finder, and copy path
+- Dedicated Settings dialog for folder management and app configuration
+- Dedicated Document Monitor for indexing health and recent failures
+- GUI access to maintenance and reindex operations
 - Exact search with SQLite FTS5
 - Local semantic layer with Chroma persistence
 - Background reconciliation, queueing, and file watching
@@ -54,6 +62,16 @@ Run the desktop app:
 uv run shelf
 ```
 
+## UI Overview
+
+Shelf is split into three user-facing areas:
+
+- Main window: search-first surface for entering queries, reviewing ranked matches, and opening documents.
+- Settings: monitored folder management, local path/config visibility, and GUI wrappers for maintenance commands.
+- Document Monitor: indexing health, queue/failure visibility, and recent failure diagnostics.
+
+The main window no longer mixes folder management and failed-document details into the search view. Those operational details live in Settings and Document Monitor so the default experience stays focused on finding files quickly.
+
 Run the test suite:
 
 ```bash
@@ -61,6 +79,8 @@ uv run pytest
 ```
 
 ## CLI Commands
+
+The same maintenance operations exposed below are also available in the GUI under Settings.
 
 Run the GUI:
 
@@ -106,6 +126,13 @@ uv run shelf --app-support-dir /tmp/shelf-dev
 6. Deterministic chunks are generated and stored in SQLite.
 7. Embeddings are persisted to Chroma when available locally.
 8. Search runs exact FTS and vector retrieval in parallel and merges results by document.
+
+## Search Experience
+
+- Results update as the user types.
+- Clicking a result opens the file in its default macOS application.
+- Each result includes an overflow menu for Reveal in Finder and Copy Path.
+- Indexing state stays visible without overwhelming the main search screen.
 
 ## Local Data
 

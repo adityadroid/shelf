@@ -15,9 +15,11 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 
 ## Scope
 
-- Build the main search screen and results list.
-- Show file metadata, snippets, and indexing status.
+- Build a search-first main screen and results list.
+- Show file metadata, snippets, and indexing status without crowding the main search surface.
 - Add result actions for open, reveal in Finder, and copy path.
+- Move monitored folders and failure diagnostics into dedicated settings and monitor surfaces.
+- Expose maintenance and repair commands in the GUI in addition to the CLI.
 - Handle empty, loading, and error states clearly.
 
 ## Out of Scope
@@ -44,6 +46,7 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 
 - Manual UX checks for fast typing, no-results, partial indexing, and result-action flows.
 - Add UI or integration tests for key states if practical within the chosen test setup.
+- 2026-04-19 refresh: `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_maintenance.py`
 
 ## Risks and Notes
 

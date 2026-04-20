@@ -5,6 +5,7 @@ import subprocess
 from dataclasses import dataclass
 
 from shelf.core.models import AppSettings
+from shelf.core.maintenance import MaintenanceService
 from shelf.core.services import ServiceContainer
 from shelf.indexing.embedding import EmbeddingService
 from shelf.indexing.reconcile import ReconciliationService
@@ -31,6 +32,18 @@ class AppStatus:
     queued_jobs: int
     recent_failures: int
     embedding_model: str
+    monitored_folders: int
+    accessible_folders: int
+    last_reconciliation: str | None
+
+
+@dataclass(slots=True)
+class FailureRecord:
+    scope: str
+    message: str
+    detail: str | None
+    ref_id: str | None
+    created_at: str
 
 
 class ShelfApplication:
@@ -91,17 +104,55 @@ class ShelfApplication:
             document_count = connection.execute("SELECT COUNT(*) AS total FROM documents").fetchone()["total"]
             job_stats = JobRepository(connection).stats()
             failure_count = connection.execute("SELECT COUNT(*) AS total FROM failures").fetchone()["total"]
+            last_reconciliation = ScannerStateRepository(connection).get("last_reconciliation")
         embedder = self.embedding_service._embedder
         return AppStatus(
             indexed_documents=document_count,
             queued_jobs=job_stats.get("PENDING", 0) + job_stats.get("PROCESSING", 0),
             recent_failures=failure_count,
             embedding_model=embedder.model_name if embedder is not None else "warming-up",
+            monitored_folders=len(self.settings.monitored_folders),
+            accessible_folders=sum(1 for folder in self.settings.monitored_folders if folder.accessible),
+            last_reconciliation=last_reconciliation,
         )
 
-    def recent_failures(self) -> list[str]:
+    def recent_failures(self, limit: int = 20) -> list[FailureRecord]:
         with self.database.connect() as connection:
-            return [row["message"] for row in FailureRepository(connection).list_recent()]
+            rows = FailureRepository(connection).list_recent(limit)
+        return [
+            FailureRecord(
+                scope=str(row["scope"]),
+                message=str(row["message"]),
+                detail=str(row["detail"]) if row["detail"] is not None else None,
+                ref_id=str(row["ref_id"]) if row["ref_id"] is not None else None,
+                created_at=str(row["created_at"]),
+            )
+            for row in rows
+        ]
+
+    def run_maintenance(self, command: str, path: str | None = None) -> dict:
+        maintenance = MaintenanceService(self.services, self.settings)
+        maintenance.sync_settings()
+        try:
+            if command == "status":
+                return maintenance.metrics_snapshot()
+            if command == "audit":
+                return maintenance.audit()
+            if command == "rebuild-all":
+                return maintenance.rebuild_all()
+            if command == "rebuild-fts":
+                return maintenance.rebuild_fts()
+            if command == "reindex-path":
+                if not path:
+                    raise ValueError("A file path is required for reindex-path.")
+                return maintenance.reindex_path(path)
+            if command == "reindex-folder":
+                if not path:
+                    raise ValueError("A folder path is required for reindex-folder.")
+                return maintenance.reindex_folder(path)
+        finally:
+            maintenance.close()
+        raise ValueError(f"Unsupported maintenance command: {command}")
 
     def open_file(self, path: str) -> None:
         subprocess.run(["open", path], check=False)
