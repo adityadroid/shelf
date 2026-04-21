@@ -56,10 +56,24 @@ Install dependencies:
 uv sync
 ```
 
+Or:
+
+```bash
+just sync
+```
+
 Run the desktop app:
 
 ```bash
 uv run shelf
+just gui
+```
+
+Build a normal macOS app bundle:
+
+```bash
+just build-app
+open dist/Shelf.app
 ```
 
 ## UI Overview
@@ -76,6 +90,7 @@ Run the test suite:
 
 ```bash
 uv run pytest
+just test
 ```
 
 ## CLI Commands
@@ -114,6 +129,24 @@ Use a custom app-support directory during development or tests:
 
 ```bash
 uv run shelf --app-support-dir /tmp/shelf-dev
+```
+
+## Justfile Commands
+
+The repository includes a `Justfile` for common workflows:
+
+```bash
+just gui
+just test
+just status
+just audit
+just rebuild-all
+just rebuild-fts
+just reindex-path /absolute/path/to/file.docx
+just reindex-folder /absolute/path/to/folder
+just build-app
+just open-app
+just clean
 ```
 
 ## How It Works
@@ -156,6 +189,7 @@ This includes:
 - `.doc` parsing requires `antiword` to be installed on the machine or bundled later during packaging.
 - If the sentence-transformer model is not already cached locally, Shelf falls back to a deterministic hashing embedder so indexing and search remain usable offline.
 - The watcher uses a polling observer for reliability in local and headless validation environments.
+- The packaged GUI app is built with `PyInstaller` via `just build-app` and outputs `dist/Shelf.app`.
 
 ## Validation
 

@@ -3,7 +3,7 @@
 - Status: `Done`
 - Priority: `P1`
 - Depends On: `016`, `017`
-- Last Updated: `2026-04-19`
+- Last Updated: `2026-04-21`
 
 ## Objective
 
@@ -45,6 +45,14 @@ The MVP must feel fast, quiet, and trustworthy on a laptop. The engineering plan
 - Run manual end-to-end checks on a realistic local corpus.
 - Capture benchmark notes for search latency, indexing throughput, and system impact.
 - Verify packaged or near-packaged builds can still find local dependencies and writable data directories.
+
+## Completion Notes
+
+- Added a committed `Shelf.spec` PyInstaller configuration for a Finder-launchable macOS app bundle.
+- Added a repository `Justfile` covering development, maintenance, and packaging commands including `just build-app`.
+- Verified `uv run pyinstaller --clean --noconfirm Shelf.spec` produced `dist/Shelf.app`.
+- Verified the bundle could be launched with `open dist/Shelf.app`.
+- Verified repository tests still pass with `uv run pytest`.
 
 ## Risks and Notes
 
