@@ -5,7 +5,13 @@ import logging
 from dataclasses import asdict
 
 from shelf.core.folders import build_default_folders
-from shelf.core.models import AppSettings, DEFAULT_LAUNCH_SHORTCUT, MonitoredFolder
+from shelf.core.models import (
+    AppSettings,
+    DEFAULT_ENABLED_EXTENSIONS,
+    DEFAULT_LAUNCH_SHORTCUT,
+    MonitoredFolder,
+    normalize_enabled_extensions,
+)
 from shelf.core.paths import AppPaths
 
 
@@ -24,6 +30,7 @@ class SettingsService:
                 schema_version=SETTINGS_SCHEMA_VERSION,
                 onboarding_completed=False,
                 monitored_folders=build_default_folders(),
+                enabled_extensions=list(DEFAULT_ENABLED_EXTENSIONS),
                 launcher_shortcut=DEFAULT_LAUNCH_SHORTCUT,
             )
             self.save(settings)
@@ -37,6 +44,7 @@ class SettingsService:
                 schema_version=SETTINGS_SCHEMA_VERSION,
                 onboarding_completed=False,
                 monitored_folders=build_default_folders(),
+                enabled_extensions=list(DEFAULT_ENABLED_EXTENSIONS),
                 launcher_shortcut=DEFAULT_LAUNCH_SHORTCUT,
                 last_error="Settings file was invalid and has been reset.",
             )
@@ -58,6 +66,7 @@ class SettingsService:
             schema_version=payload.get("schema_version", SETTINGS_SCHEMA_VERSION),
             onboarding_completed=payload.get("onboarding_completed", False),
             monitored_folders=folders,
+            enabled_extensions=normalize_enabled_extensions(payload.get("enabled_extensions")),
             launcher_shortcut=payload.get("launcher_shortcut", DEFAULT_LAUNCH_SHORTCUT),
             last_error=payload.get("last_error"),
         )

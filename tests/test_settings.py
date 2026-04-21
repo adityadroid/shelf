@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from shelf.core.models import DEFAULT_LAUNCH_SHORTCUT
+from shelf.core.models import DEFAULT_ENABLED_EXTENSIONS, DEFAULT_LAUNCH_SHORTCUT
 from shelf.core.settings import SettingsService
 from shelf.core.paths import AppPaths
 
@@ -16,6 +16,7 @@ def test_settings_create_defaults(tmp_path):
     assert settings.onboarding_completed is False
     assert len(settings.monitored_folders) == 3
     assert settings.launcher_shortcut == DEFAULT_LAUNCH_SHORTCUT
+    assert settings.enabled_extensions == list(DEFAULT_ENABLED_EXTENSIONS)
     assert paths.settings_file.exists()
 
 
@@ -25,12 +26,14 @@ def test_settings_round_trip(tmp_path):
     settings = service.load()
     settings.onboarding_completed = True
     settings.launcher_shortcut = "Meta+Shift+Space"
+    settings.enabled_extensions = [".pdf", ".txt", ".md"]
 
     service.save(settings)
     reloaded = service.load()
 
     assert reloaded.onboarding_completed is True
     assert reloaded.launcher_shortcut == "Meta+Shift+Space"
+    assert reloaded.enabled_extensions == [".pdf", ".txt", ".md"]
     assert [folder.path for folder in reloaded.monitored_folders] == [
         folder.path for folder in settings.monitored_folders
     ]

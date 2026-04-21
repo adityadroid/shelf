@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QLabel, QKeySequenceEdit, QToolButton
+from PySide6.QtWidgets import QLabel, QKeySequenceEdit, QScrollArea, QToolButton
 
 from shelf.core.application import AppStatus, FailureRecord
 from shelf.core.models import AppSettings, MonitoredFolder
@@ -125,7 +125,7 @@ def test_main_window_shows_live_results_popup(qtbot):
     qtbot.keyClick(window.search_input, "a")
     qtbot.wait(150)
     assert controller.live_search_queries == []
-    assert window.search_input.text() == "a"
+    assert window.search_input.text().startswith("a")
     assert window.search_input.hasFocus()
 
     qtbot.keyClicks(window.search_input, "lpha")
@@ -192,3 +192,77 @@ def test_settings_dialog_surfaces_maintenance_commands(qtbot):
     assert controller.maintenance_calls == [("status", None)]
     assert '"command": "status"' in dialog.maintenance_output.toPlainText()
     assert refresh_calls == ["refresh", "refresh"]
+
+
+def test_settings_dialog_can_resize_and_uses_refined_close_button(qtbot):
+    services = build_services_stub()
+    settings = AppSettings(
+        onboarding_completed=True,
+        monitored_folders=[MonitoredFolder(path="/tmp/Documents", source="default", accessible=True)],
+    )
+    controller = StubController()
+
+    dialog = SettingsDialog(services, settings, controller, lambda: None)
+    qtbot.addWidget(dialog)
+    dialog.show()
+    qtbot.waitUntil(dialog.isVisible)
+
+    close_button = dialog.findChild(QToolButton, "SettingsCloseButton")
+    assert close_button is not None
+    assert close_button.text() == "×"
+    assert close_button.size().width() == 28
+    assert close_button.size().height() == 28
+
+    start_width = dialog.width()
+    frame = dialog.frameGeometry()
+    right_edge = QPoint(frame.right(), frame.center().y())
+    assert dialog._resize_edges_for_global_pos(right_edge) == {"right"}
+
+    dialog._resize_edges = {"right"}
+    dialog._resize_start_geometry = dialog.geometry()
+    dialog._resize_start_global = right_edge
+    dialog._resize_window(right_edge + QPoint(120, 0))
+    assert dialog.width() > start_width
+
+    start_height = dialog.height()
+    bottom_edge = QPoint(dialog.frameGeometry().center().x(), dialog.frameGeometry().bottom())
+    assert dialog._resize_edges_for_global_pos(bottom_edge) == {"bottom"}
+
+    dialog._resize_edges = {"bottom"}
+    dialog._resize_start_geometry = dialog.geometry()
+    dialog._resize_start_global = bottom_edge
+    dialog._resize_window(bottom_edge - QPoint(0, 120))
+    assert dialog.height() < start_height
+
+    scroll_areas = dialog.page_stack.currentWidget().findChildren(QScrollArea)
+    assert scroll_areas
+
+
+def test_main_window_closes_to_tray_and_can_resize(qtbot):
+    services = build_services_stub()
+    settings = AppSettings(
+        onboarding_completed=True,
+        monitored_folders=[MonitoredFolder(path="/tmp/Documents", source="default", accessible=True)],
+    )
+    controller = StubController()
+
+    window = MainWindow(services, settings, controller)
+    qtbot.addWidget(window)
+    window.show()
+    qtbot.waitUntil(window.isVisible)
+
+    start_width = window.width()
+    frame = window.frameGeometry()
+    right_edge = QPoint(frame.right(), frame.center().y())
+    resize_edges = window._resize_edges_for_global_pos(right_edge)
+    assert resize_edges == {"right"}
+
+    window._resize_edges = {"right"}
+    window._resize_start_geometry = window.geometry()
+    window._resize_start_global = right_edge
+    window._resize_window(right_edge + QPoint(120, 0))
+    assert window.width() > start_width
+
+    window.close()
+    assert window.isHidden()
+    assert not window._is_quitting

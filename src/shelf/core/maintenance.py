@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from shelf.core.models import AppSettings, SUPPORTED_EXTENSIONS
+from shelf.core.models import AppSettings
 from shelf.core.services import ServiceContainer
 from shelf.indexing.embedding import EmbeddingService
 from shelf.indexing.models import JobType
@@ -56,6 +56,7 @@ class MaintenanceService:
             self.document_repository,
             self.job_repository,
             self.scanner_state,
+            set(self.settings.enabled_extensions),
         )
         reconciliation.run()
         self.connection.commit()
@@ -72,7 +73,7 @@ class MaintenanceService:
         root = Path(path).expanduser().resolve(strict=False)
         count = 0
         for candidate in root.rglob("*"):
-            if candidate.is_file() and candidate.suffix.lower() in SUPPORTED_EXTENSIONS:
+            if candidate.is_file() and candidate.suffix.lower() in set(self.settings.enabled_extensions):
                 self.job_repository.enqueue(
                     JobType.UPSERT,
                     str(candidate.resolve()),

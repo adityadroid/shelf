@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
 import json
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import QEvent, QPoint, QTimer, Qt, Signal
-from PySide6.QtGui import QAction, QGuiApplication, QKeySequence, QMouseEvent
+from PySide6.QtGui import QAction, QGuiApplication, QIcon, QKeySequence, QMouseEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
+    QCheckBox,
     QDialog,
     QFileDialog,
     QFrame,
@@ -22,6 +25,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
+    QMenu,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
@@ -29,6 +33,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QStackedWidget,
     QStatusBar,
+    QSystemTrayIcon,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -36,114 +41,185 @@ from PySide6.QtWidgets import (
 
 from shelf.core.application import FailureRecord, ShelfApplication
 from shelf.core.folders import remove_folder_by_path, validate_folder_candidate
-from shelf.core.models import AppSettings, DEFAULT_LAUNCH_SHORTCUT, MonitoredFolder, SUPPORTED_EXTENSIONS
+from shelf.core.models import (
+    AppSettings,
+    DEFAULT_LAUNCH_SHORTCUT,
+    DOCUMENT_TYPE_LABELS,
+    MonitoredFolder,
+    normalize_enabled_extensions,
+)
 from shelf.core.services import ServiceContainer
 from shelf.indexing.models import SearchResult
 from shelf.ui.launcher_shortcut import MacLauncherShortcut
 
 
 APP_STYLESHEET = """
-QMainWindow {
+QMainWindow, QDialog {
     background: transparent;
 }
 QWidget {
-    color: #221f1d;
+    color: #dbeafe;
     font-size: 14px;
     background: transparent;
 }
-QFrame#GlassPanel, QFrame#ComposerShell, QFrame#SettingsHero, QFrame#EmptyCard {
-    background: rgba(255, 255, 255, 0.74);
-    border: 1px solid rgba(255, 255, 255, 0.84);
-    border-radius: 28px;
+QWidget#FloatingRoot {
+    background: transparent;
 }
-QFrame#SettingsShell, QFrame#SettingsSidebar, QFrame#SettingsPane, QFrame#SettingsCard, QFrame#SettingsCommandCard {
-    background: rgba(102, 98, 96, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 28px;
-}
-QFrame#SettingsSidebar, QFrame#SettingsPane, QFrame#SettingsCard, QFrame#SettingsCommandCard {
-    background: rgba(255, 255, 255, 0.12);
+QFrame#GlassPanel, QFrame#EmptyCard {
+    background: rgba(15, 23, 42, 0.84);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 24px;
 }
 QFrame#ComposerShell {
-    background: rgba(102, 98, 96, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.34);
-    border-radius: 26px;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 rgba(15, 23, 42, 0.96),
+        stop: 0.55 rgba(30, 41, 59, 0.96),
+        stop: 1 rgba(37, 99, 235, 0.74)
+    );
+    border: 1px solid rgba(125, 211, 252, 0.28);
+    border-radius: 24px;
 }
 QFrame#ResultsShell {
-    background: rgba(102, 98, 96, 0.86);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 26px;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 rgba(15, 23, 42, 0.96),
+        stop: 1 rgba(30, 41, 59, 0.96)
+    );
+    border: 1px solid rgba(96, 165, 250, 0.24);
+    border-radius: 24px;
 }
 QFrame#ResultCard {
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 18px;
+    background: rgba(51, 65, 85, 0.42);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 16px;
 }
 QFrame#ResultCard[active="true"] {
-    background: rgba(255, 255, 255, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-QToolButton#SettingsIconButton {
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 18px;
-    color: #f5f2ee;
-    font-size: 20px;
-    font-weight: 700;
-    padding: 6px;
-}
-QToolButton#SettingsIconButton:hover {
-    background: rgba(255, 255, 255, 0.28);
-}
-QToolButton#SettingsCloseButton {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 16px;
-    color: #f5f2ee;
-    font-size: 16px;
-    font-weight: 700;
-}
-QToolButton#SettingsCloseButton:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(37, 99, 235, 0.22);
+    border: 1px solid rgba(96, 165, 250, 0.36);
 }
 QFrame#ResultCard:hover, QFrame#GlassPanel:hover, QFrame#EmptyCard:hover {
-    background: rgba(255, 255, 255, 0.24);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(51, 65, 85, 0.56);
+    border: 1px solid rgba(125, 211, 252, 0.22);
+}
+QFrame#SettingsShell {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 rgba(8, 15, 33, 0.98),
+        stop: 0.45 rgba(15, 23, 42, 0.98),
+        stop: 1 rgba(30, 64, 175, 0.78)
+    );
+    border: 1px solid rgba(96, 165, 250, 0.24);
+    border-radius: 30px;
+}
+QFrame#SettingsHero {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 rgba(37, 99, 235, 0.28),
+        stop: 0.55 rgba(30, 41, 59, 0.52),
+        stop: 1 rgba(14, 165, 233, 0.18)
+    );
+    border: 1px solid rgba(191, 219, 254, 0.18);
+    border-radius: 24px;
+}
+QFrame#SettingsSidebar {
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 22px;
+}
+QFrame#SettingsPane {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 24px;
+}
+QFrame#SettingsOverviewPane {
+    background: transparent;
+    border: none;
+}
+QFrame#SettingsCard, QFrame#SettingsCommandCard {
+    background: rgba(51, 65, 85, 0.28);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+}
+QFrame#StatCard, QFrame#SidebarStatusCard, QFrame#ShortcutChip {
+    background: rgba(15, 23, 42, 0.44);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+}
+QFrame#ShortcutChip {
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 10px;
 }
 QLabel#Eyebrow {
-    color: #7c6f67;
-    font-size: 12px;
+    color: #60a5fa;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 QLabel#HeroTitle {
-    color: #191615;
-    font-size: 42px;
-    font-weight: 700;
+    color: #eff6ff;
+    font-size: 36px;
+    font-weight: 600;
 }
 QLabel#HeroSubtitle {
-    color: #665d58;
-    font-size: 15px;
+    color: rgba(219, 234, 254, 0.84);
+    font-size: 14px;
 }
 QLabel#SectionTitle {
-    color: #f4efea;
-    font-size: 15px;
+    color: #e2e8f0;
+    font-size: 14px;
     font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 QLabel#SettingsTitle {
-    color: #f5f2ee;
+    color: #f8fbff;
+    font-size: 32px;
+    font-weight: 600;
+}
+QLabel#SettingsSubtitle {
+    color: rgba(219, 234, 254, 0.8);
+    font-size: 14px;
+}
+QLabel#CardTitle {
+    color: #f8fbff;
+    font-size: 14px;
+    font-weight: 700;
+}
+QLabel#CardSubtitle, QLabel#NavMeta, QLabel#SidebarStatusMeta {
+    color: rgba(191, 219, 254, 0.74);
+    font-size: 12px;
+}
+QLabel#StatNumber {
+    color: #38bdf8;
     font-size: 28px;
     font-weight: 700;
 }
-QLabel#SettingsSubtitle {
-    color: rgba(245, 242, 238, 0.72);
-    font-size: 13px;
+QLabel#StatLabel {
+    color: rgba(219, 234, 254, 0.82);
+    font-size: 11px;
+}
+QLabel#StatusOkay {
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 600;
+}
+QLabel#ShortcutPlus {
+    color: rgba(219, 234, 254, 0.84);
+    font-size: 16px;
+    font-weight: 700;
+}
+QLabel#ShortcutChipLabel {
+    color: #f8fbff;
+    font-size: 12px;
+    font-weight: 700;
 }
 QLabel#SectionCaption, QLabel#MetaText, QLabel#PathText, QLabel#ComposerHint {
-    color: rgba(245, 242, 238, 0.72);
+    color: rgba(191, 219, 254, 0.82);
 }
 QLabel#ResultTitle {
-    color: #f5f2ee;
+    color: #f8fbff;
     font-size: 13px;
     font-weight: 700;
 }
@@ -151,160 +227,273 @@ QLabel#PathText {
     font-size: 10px;
 }
 QPushButton#RevealButton {
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 14px;
-    color: #f5f2ee;
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 12px;
+    color: #dbeafe;
     font-size: 12px;
-    padding: 7px 12px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 0 12px;
 }
 QPushButton#RevealButton:hover {
-    background: rgba(255, 255, 255, 0.26);
+    background: rgba(37, 99, 235, 0.28);
 }
 QLabel#Pill {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 15px;
-    color: #f5f2ee;
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    border-radius: 14px;
+    color: #dbeafe;
     font-size: 12px;
     font-weight: 600;
     padding: 6px 12px;
 }
 QLabel#EmptyTitle {
-    color: #f4efea;
+    color: #eff6ff;
     font-size: 18px;
     font-weight: 700;
 }
 QLabel#EmptyBody {
-    color: rgba(245, 242, 238, 0.72);
+    color: rgba(191, 219, 254, 0.78);
     font-size: 12px;
 }
 QLineEdit#SearchInput, QLineEdit#PathInput, QKeySequenceEdit#PathInput, QPlainTextEdit#MaintenanceOutput {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 22px;
-    color: #f5f2ee;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 14px;
+    color: #eff6ff;
     padding: 14px 18px;
+    selection-background-color: rgba(59, 130, 246, 0.5);
+}
+QLineEdit#PathInput[readOnly="true"] {
+    color: rgba(219, 234, 254, 0.92);
 }
 QKeySequenceEdit#PathInput {
-    min-height: 50px;
-    padding: 0 18px;
+    min-height: 48px;
+    padding: 0 16px;
 }
 QKeySequenceEdit#PathInput::part(lineedit) {
     background: transparent;
     border: none;
-    color: #f5f2ee;
+    color: #eff6ff;
 }
 QLineEdit#SearchInput {
     background: transparent;
     border: none;
-    color: #f5f2ee;
+    color: #eff6ff;
     font-size: 17px;
     font-weight: 600;
     padding: 10px 10px;
 }
+QLineEdit#SearchInput::placeholder, QLineEdit#PathInput::placeholder, QPlainTextEdit#MaintenanceOutput::placeholder {
+    color: rgba(148, 163, 184, 0.74);
+}
 QLineEdit#PathInput:focus, QKeySequenceEdit#PathInput:focus, QPlainTextEdit#MaintenanceOutput:focus {
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(96, 165, 250, 0.68);
+}
+QCheckBox#DocumentTypeCheckbox {
+    color: #dbeafe;
+    spacing: 10px;
+    padding: 4px 0;
+}
+QCheckBox#DocumentTypeCheckbox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.72);
+}
+QCheckBox#DocumentTypeCheckbox::indicator:checked {
+    background: #2563eb;
+    border: 1px solid rgba(191, 219, 254, 0.42);
 }
 QPushButton {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 18px;
-    color: #f5f2ee;
+    background: rgba(51, 65, 85, 0.56);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 14px;
+    color: #dbeafe;
     font-weight: 600;
-    padding: 10px 18px;
+    min-height: 40px;
+    padding: 0 18px;
 }
 QPushButton:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(71, 85, 105, 0.72);
+    border: 1px solid rgba(125, 211, 252, 0.22);
 }
 QPushButton#PrimaryButton {
-    background: rgba(255, 255, 255, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    color: #f5f2ee;
-    padding: 12px 18px;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 0,
+        stop: 0 #2563eb,
+        stop: 1 #0ea5e9
+    );
+    border: 1px solid rgba(191, 219, 254, 0.26);
+    color: #eff6ff;
+    padding: 0 18px;
+}
+QPushButton#PrimaryButton:hover {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 0,
+        stop: 0 #3b82f6,
+        stop: 1 #38bdf8
+    );
 }
 QPushButton#GhostButton {
-    background: rgba(108, 103, 101, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #f5f2ee;
-    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.58);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #dbeafe;
+    padding: 0 16px;
 }
 QPushButton#DangerButton {
-    color: #ffd3cb;
+    background: rgba(127, 29, 29, 0.3);
+    border: 1px solid rgba(248, 113, 113, 0.22);
+    color: #fecaca;
+}
+QPushButton#DangerButton:hover {
+    background: rgba(153, 27, 27, 0.42);
 }
 QPushButton#SettingsNavButton {
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 18px;
-    color: rgba(245, 242, 238, 0.72);
+    border-radius: 16px;
+    color: rgba(191, 219, 254, 0.7);
     font-size: 14px;
     font-weight: 600;
-    padding: 12px 14px;
+    min-height: 56px;
+    padding: 0 16px;
     text-align: left;
 }
 QPushButton#SettingsNavButton:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(37, 99, 235, 0.12);
+    color: #eff6ff;
 }
 QPushButton#SettingsNavButton:checked {
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: #f5f2ee;
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    color: #f8fbff;
 }
 QToolButton {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(214, 205, 197, 0.92);
-    border-radius: 16px;
-    color: #201c1a;
+    background: rgba(241, 245, 249, 0.92);
+    border: 1px solid rgba(191, 219, 254, 0.62);
+    border-radius: 14px;
+    color: #0f172a;
     padding: 8px 10px;
+}
+QToolButton#SettingsIconButton {
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(125, 211, 252, 0.24);
+    border-radius: 16px;
+    color: #eff6ff;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 6px;
+}
+QToolButton#SettingsIconButton:hover {
+    background: rgba(37, 99, 235, 0.3);
+}
+QToolButton#SettingsCloseButton {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0;
+}
+QToolButton#SettingsCloseButton:hover {
+    background: rgba(239, 68, 68, 0.86);
+    border: 1px solid rgba(248, 113, 113, 0.95);
+    color: #ffffff;
+}
+QToolButton#SettingsCloseButton:pressed {
+    background: rgba(220, 38, 38, 0.96);
+    border: 1px solid rgba(248, 113, 113, 1);
+    color: #ffffff;
 }
 QScrollArea {
     background: transparent;
+    border: none;
 }
 QScrollBar:vertical {
     background: transparent;
     width: 6px;
-    margin: 10px 0 10px 0;
+    margin: 10px 8px 10px 0;
 }
 QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 0.26);
+    background: rgba(96, 165, 250, 0.35);
     border-radius: 3px;
     min-height: 26px;
 }
+QScrollBar:horizontal {
+    background: transparent;
+    height: 6px;
+    margin: 0 10px 8px 10px;
+}
+QScrollBar::handle:horizontal {
+    background: rgba(96, 165, 250, 0.35);
+    border-radius: 3px;
+    min-width: 26px;
+}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
     background: transparent;
     height: 0;
+    width: 0;
 }
 QProgressBar {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(51, 65, 85, 0.42);
     border: none;
     border-radius: 3px;
     max-height: 6px;
 }
 QProgressBar::chunk {
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(96, 165, 250, 0.9);
     border-radius: 3px;
 }
 QListWidget, QPlainTextEdit {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 22px;
-    color: #f5f2ee;
+    background: rgba(15, 23, 42, 0.52);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 16px;
+    color: #eff6ff;
 }
 QListWidget {
     padding: 8px;
 }
+QListWidget#OverviewFolderList {
+    padding: 0;
+}
+QListWidget#OverviewFolderList::item {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    padding: 14px 10px;
+}
+QListWidget#FolderAuditList::item {
+    padding: 12px 10px;
+}
 QPlainTextEdit {
     padding: 10px;
 }
+QListWidget::item {
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+QListWidget::item:selected {
+    background: rgba(37, 99, 235, 0.22);
+    color: #f8fbff;
+}
 QStatusBar {
     background: transparent;
-    color: rgba(245, 242, 238, 0.72);
+    color: rgba(191, 219, 254, 0.78);
 }
 """
 
 
 ICON_PATH = Path(__file__).resolve().parent / "assets" / "shelf_icon.svg"
+APP_VERSION = _version = "0.1.0"
+try:
+    APP_VERSION = version("shelf")
+except PackageNotFoundError:
+    APP_VERSION = _version
 
 
 class SearchResultCard(QFrame):
@@ -376,6 +565,8 @@ def compact_result_path(path: str) -> str:
 
 
 class SettingsDialog(QDialog):
+    RESIZE_MARGIN = 10
+
     def __init__(
         self,
         services: ServiceContainer,
@@ -390,9 +581,25 @@ class SettingsDialog(QDialog):
         self.app_controller = app_controller
         self.on_settings_changed = on_settings_changed
         self._drag_offset: QPoint | None = None
+        self._resize_edges: set[str] = set()
+        self._resize_start_geometry = None
+        self._resize_start_global: QPoint | None = None
+        self._nav_definitions = (
+            ("⌂", "Overview", "Control room & actions", self._build_overview_tab),
+            ("⌘", "Application", "Document types & storage", self._build_general_tab),
+            ("♡", "Library Health", "Indexing & diagnostics", self._build_monitor_tab),
+            ("⟳", "Maintenance", "Output & command history", self._build_maintenance_tab),
+        )
+        self._section_indexes = {
+            "overview": 0,
+            "application": 1,
+            "health": 2,
+            "maintenance": 3,
+        }
 
         self.setWindowTitle("Shelf Settings")
-        self.resize(860, 640)
+        self.resize(1320, 880)
+        self.setMinimumSize(820, 560)
         self.setObjectName("SettingsDialog")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(
@@ -402,24 +609,25 @@ class SettingsDialog(QDialog):
             | Qt.WindowType.WindowStaysOnTopHint
         )
         self.setStyleSheet(APP_STYLESHEET)
+        self.setMouseTracking(True)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(0)
 
         self.shell = QFrame(self)
         self.shell.setObjectName("SettingsShell")
         self._apply_shadow(self.shell, blur=44, offset_y=20, alpha=120)
         shell_layout = QVBoxLayout(self.shell)
-        shell_layout.setContentsMargins(20, 20, 20, 20)
-        shell_layout.setSpacing(18)
+        shell_layout.setContentsMargins(0, 0, 0, 0)
+        shell_layout.setSpacing(0)
         layout.addWidget(self.shell)
 
         header = QFrame(self.shell)
-        header.setObjectName("SettingsCard")
+        header.setObjectName("SettingsHero")
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(18, 18, 18, 18)
-        header_layout.setSpacing(16)
+        header_layout.setContentsMargins(24, 20, 20, 20)
+        header_layout.setSpacing(18)
         shell_layout.addWidget(header)
 
         title_column = QVBoxLayout()
@@ -444,40 +652,38 @@ class SettingsDialog(QDialog):
 
         close_button = QToolButton(header)
         close_button.setObjectName("SettingsCloseButton")
-        close_button.setText("x")
-        close_button.setFixedSize(34, 34)
+        close_button.setText("×")
+        close_button.setToolTip("Close settings")
+        close_button.setFixedSize(28, 28)
         close_button.clicked.connect(self.accept)
         header_layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignTop)
 
-        content_row = QHBoxLayout()
-        content_row.setSpacing(18)
-        shell_layout.addLayout(content_row, 1)
+        content = QFrame(self.shell)
+        content_layout = QHBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        shell_layout.addWidget(content, 1)
 
-        sidebar = QFrame(self.shell)
+        sidebar = QFrame(content)
         sidebar.setObjectName("SettingsSidebar")
+        sidebar.setFixedWidth(252)
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(14, 14, 14, 14)
-        sidebar_layout.setSpacing(8)
-        content_row.addWidget(sidebar, 0)
+        sidebar_layout.setContentsMargins(18, 18, 18, 18)
+        sidebar_layout.setSpacing(12)
+        content_layout.addWidget(sidebar, 0)
 
         sidebar_title = QLabel("Sections", sidebar)
         sidebar_title.setObjectName("Eyebrow")
         sidebar_layout.addWidget(sidebar_title)
+        self.sidebar_status_card = self._build_sidebar_status_card(sidebar)
 
         self.section_buttons = QButtonGroup(self)
         self.section_buttons.setExclusive(True)
-        self.page_stack = QStackedWidget(self.shell)
-        content_row.addWidget(self.page_stack, 1)
+        self.page_stack = QStackedWidget(content)
+        content_layout.addWidget(self.page_stack, 1)
 
-        for index, (label, factory) in enumerate(
-            (
-                ("Application", self._build_general_tab),
-                ("Folders", self._build_folders_tab),
-                ("Library Health", self._build_monitor_tab),
-                ("Maintenance", self._build_maintenance_tab),
-            )
-        ):
-            button = QPushButton(label, sidebar)
+        for index, (icon, label, meta, factory) in enumerate(self._nav_definitions):
+            button = QPushButton(f"{icon}  {label}\n{meta}", sidebar)
             button.setObjectName("SettingsNavButton")
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, selected=index: self.page_stack.setCurrentIndex(selected))
@@ -486,10 +692,14 @@ class SettingsDialog(QDialog):
             self.page_stack.addWidget(factory())
 
         sidebar_layout.addStretch(1)
+        sidebar_layout.addWidget(self.sidebar_status_card)
         first_button = self.section_buttons.button(0)
         if first_button is not None:
             first_button.setChecked(True)
         self.page_stack.setCurrentIndex(0)
+        self.refresh_folder_list()
+        self.refresh_monitor_data()
+        self._render_shortcut_chips(self.settings.launcher_shortcut or DEFAULT_LAUNCH_SHORTCUT)
 
     def _apply_shadow(self, widget: QWidget, blur: int, offset_y: int, alpha: int) -> None:
         shadow = QGraphicsDropShadowEffect(widget)
@@ -501,62 +711,578 @@ class SettingsDialog(QDialog):
         shadow.setColor(color)
         widget.setGraphicsEffect(shadow)
 
-    def _build_general_tab(self) -> QWidget:
-        tab = QFrame(self)
-        tab.setObjectName("SettingsPane")
-        layout = QVBoxLayout(tab)
+    def _make_scrollable_settings_page(self) -> tuple[QWidget, QWidget, QVBoxLayout]:
+        wrapper = QFrame(self)
+        wrapper.setObjectName("SettingsPane")
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(0)
+
+        scroll = QScrollArea(wrapper)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setViewportMargins(0, 0, 10, 0)
+        wrapper_layout.addWidget(scroll)
+
+        content = QWidget(scroll)
+        content.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(22, 22, 22, 22)
         layout.setSpacing(16)
+        scroll.setWidget(content)
+        return wrapper, content, layout
 
-        title = QLabel("Application", tab)
+    def _clear_layout(self, layout) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
+            if item is None:
+                continue
+            child_layout = item.layout()
+            if child_layout is not None:
+                self._clear_layout(child_layout)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+
+    def _resize_edges_for_global_pos(self, global_pos: QPoint) -> set[str]:
+        frame = self.frameGeometry()
+        margin = self.RESIZE_MARGIN
+        edges: set[str] = set()
+        if abs(global_pos.x() - frame.left()) <= margin:
+            edges.add("left")
+        elif abs(global_pos.x() - frame.right()) <= margin:
+            edges.add("right")
+        if abs(global_pos.y() - frame.top()) <= margin:
+            edges.add("top")
+        elif abs(global_pos.y() - frame.bottom()) <= margin:
+            edges.add("bottom")
+        return edges
+
+    def _update_resize_cursor(self, global_pos: QPoint) -> None:
+        edges = self._resize_edges_for_global_pos(global_pos)
+        if edges == {"left"} or edges == {"right"}:
+            self.setCursor(Qt.CursorShape.SizeHorCursor)
+        elif edges == {"top"} or edges == {"bottom"}:
+            self.setCursor(Qt.CursorShape.SizeVerCursor)
+        elif edges in ({"left", "top"}, {"right", "bottom"}):
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        elif edges in ({"right", "top"}, {"left", "bottom"}):
+            self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+        elif self._drag_offset is None and not self._resize_edges:
+            self.unsetCursor()
+
+    def _resize_window(self, global_pos: QPoint) -> None:
+        if not self._resize_edges or self._resize_start_geometry is None or self._resize_start_global is None:
+            return
+
+        delta = global_pos - self._resize_start_global
+        geometry = self._resize_start_geometry.adjusted(0, 0, 0, 0)
+        minimum_width = max(self.minimumWidth(), 820)
+        minimum_height = max(self.minimumHeight(), 560)
+
+        if "left" in self._resize_edges:
+            new_left = min(geometry.right() - minimum_width, geometry.left() + delta.x())
+            geometry.setLeft(new_left)
+        if "right" in self._resize_edges:
+            geometry.setRight(max(geometry.left() + minimum_width, geometry.right() + delta.x()))
+        if "top" in self._resize_edges:
+            new_top = min(geometry.bottom() - minimum_height, geometry.top() + delta.y())
+            geometry.setTop(new_top)
+        if "bottom" in self._resize_edges:
+            geometry.setBottom(max(geometry.top() + minimum_height, geometry.bottom() + delta.y()))
+
+        self.setGeometry(geometry)
+
+    def _build_sidebar_status_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SidebarStatusCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(8)
+
+        self.sidebar_status_title = QLabel("Shelf is running", card)
+        self.sidebar_status_title.setObjectName("CardTitle")
+        layout.addWidget(self.sidebar_status_title)
+
+        self.sidebar_status_version = QLabel(f"Version {APP_VERSION}", card)
+        self.sidebar_status_version.setObjectName("SidebarStatusMeta")
+        layout.addWidget(self.sidebar_status_version)
+
+        self.sidebar_status_detail = QLabel("All systems operational", card)
+        self.sidebar_status_detail.setObjectName("SidebarStatusMeta")
+        self.sidebar_status_detail.setWordWrap(True)
+        layout.addWidget(self.sidebar_status_detail)
+        return card
+
+    def _build_overview_tab(self) -> QWidget:
+        wrapper = QFrame(self)
+        wrapper.setObjectName("SettingsOverviewPane")
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(18, 18, 18, 18)
+        wrapper_layout.setSpacing(0)
+
+        scroll = QScrollArea(wrapper)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setViewportMargins(0, 0, 10, 0)
+        wrapper_layout.addWidget(scroll)
+
+        content = QWidget(scroll)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(18)
+        scroll.setWidget(content)
+
+        title = QLabel("Overview", content)
+        title.setObjectName("SectionTitle")
+        layout.addWidget(title)
+
+        subtitle = QLabel("Use this space for the controls and signals that matter most while Shelf is running.", content)
+        subtitle.setObjectName("SectionCaption")
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        self.overview_shortcut_card = self._build_overview_shortcut_card(content)
+        self.overview_health_card = self._build_overview_health_card(content)
+        self.overview_folders_card = self._build_overview_folders_card(content)
+        self.overview_commands_card = self._build_overview_commands_card(content)
+        self.overview_reindex_card = self._build_overview_reindex_card(content)
+        self.overview_failures_card = self._build_overview_failures_card(content)
+
+        self.overview_grid = QGridLayout()
+        self.overview_grid.setHorizontalSpacing(18)
+        self.overview_grid.setVerticalSpacing(18)
+        layout.addLayout(self.overview_grid)
+        self._refresh_overview_layout()
+        layout.addStretch(1)
+        return wrapper
+
+    def _refresh_overview_layout(self) -> None:
+        if not hasattr(self, "overview_grid"):
+            return
+        self._clear_layout(self.overview_grid)
+        available_width = self.page_stack.width() if hasattr(self, "page_stack") else self.width()
+        wide = available_width >= 1120
+
+        if wide:
+            self.overview_grid.addWidget(self.overview_shortcut_card, 0, 0)
+            self.overview_grid.addWidget(self.overview_health_card, 0, 1)
+            self.overview_grid.addWidget(self.overview_folders_card, 1, 0)
+
+            right_column = QVBoxLayout()
+            right_column.setSpacing(18)
+            right_column.addWidget(self.overview_commands_card)
+            right_column.addWidget(self.overview_reindex_card)
+            right_column.addStretch(1)
+            self.overview_grid.addLayout(right_column, 1, 1)
+            self.overview_grid.addWidget(self.overview_failures_card, 2, 0, 1, 2)
+            self.overview_grid.setColumnStretch(0, 5)
+            self.overview_grid.setColumnStretch(1, 4)
+        else:
+            self.overview_grid.addWidget(self.overview_shortcut_card, 0, 0)
+            self.overview_grid.addWidget(self.overview_health_card, 1, 0)
+            self.overview_grid.addWidget(self.overview_folders_card, 2, 0)
+            self.overview_grid.addWidget(self.overview_commands_card, 3, 0)
+            self.overview_grid.addWidget(self.overview_reindex_card, 4, 0)
+            self.overview_grid.addWidget(self.overview_failures_card, 5, 0)
+            self.overview_grid.setColumnStretch(0, 1)
+
+    def _build_overview_shortcut_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        title = QLabel("Launcher Shortcut", card)
+        title.setObjectName("CardTitle")
+        layout.addWidget(title)
+
+        caption = QLabel("Use this shortcut to show or hide Shelf from anywhere while the app is running.", card)
+        caption.setObjectName("CardSubtitle")
+        caption.setWordWrap(True)
+        layout.addWidget(caption)
+
+        panel = QFrame(card)
+        panel.setObjectName("StatCard")
+        panel_layout = QVBoxLayout(panel)
+        panel_layout.setContentsMargins(14, 14, 14, 14)
+        panel_layout.setSpacing(12)
+
+        current_label = QLabel("Current Shortcut", panel)
+        current_label.setObjectName("Eyebrow")
+        panel_layout.addWidget(current_label)
+
+        chip_row = QHBoxLayout()
+        chip_row.setSpacing(10)
+        self.shortcut_chips_host = QHBoxLayout()
+        self.shortcut_chips_host.setSpacing(10)
+        chip_row.addLayout(self.shortcut_chips_host)
+        chip_row.addStretch(1)
+        panel_layout.addLayout(chip_row)
+
+        self.overview_shortcut_summary = QLabel("Default: Cmd+Option+S", panel)
+        self.overview_shortcut_summary.setObjectName("CardSubtitle")
+        self.overview_shortcut_summary.setWordWrap(True)
+        panel_layout.addWidget(self.overview_shortcut_summary)
+
+        actions = QHBoxLayout()
+        edit_app_button = QPushButton("Customize Shortcut", panel)
+        edit_app_button.setObjectName("PrimaryButton")
+        edit_app_button.clicked.connect(lambda: self._select_section(self._section_indexes["application"]))
+        actions.addWidget(edit_app_button)
+        manage_folders_button = QPushButton("Reset to Default", panel)
+        manage_folders_button.setObjectName("GhostButton")
+        manage_folders_button.clicked.connect(self.reset_launcher_shortcut)
+        actions.addWidget(manage_folders_button)
+        actions.addStretch(1)
+        panel_layout.addLayout(actions)
+        layout.addWidget(panel)
+        return card
+
+    def _build_overview_health_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        title = QLabel("Health Summary", card)
+        title.setObjectName("CardTitle")
+        layout.addWidget(title)
+        subtitle = QLabel("Live status of indexing and system health.", card)
+        subtitle.setObjectName("CardSubtitle")
+        layout.addWidget(subtitle)
+
+        stats_row = QHBoxLayout()
+        stats_row.setSpacing(12)
+        self.summary_indexed_value, indexed_card = self._make_stat_card(card, "Indexed\nfiles")
+        self.summary_queued_value, queued_card = self._make_stat_card(card, "Queued\nfiles")
+        self.summary_failures_value, failures_card = self._make_stat_card(card, "Failures\ndetected")
+        stats_row.addWidget(indexed_card)
+        stats_row.addWidget(queued_card)
+        stats_row.addWidget(failures_card)
+        layout.addLayout(stats_row)
+
+        footer = QHBoxLayout()
+        footer.setSpacing(12)
+        self.health_status_label = QLabel("● Shelf is healthy and up to date", card)
+        self.health_status_label.setObjectName("StatusOkay")
+        footer.addWidget(self.health_status_label)
+        footer.addStretch(1)
+        details_button = QPushButton("View Library Health", card)
+        details_button.setObjectName("GhostButton")
+        details_button.clicked.connect(lambda: self._select_section(self._section_indexes["health"]))
+        footer.addWidget(details_button)
+        layout.addLayout(footer)
+        return card
+
+    def _build_overview_folders_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        title = QLabel("Monitored Folders", card)
+        title.setObjectName("CardTitle")
+        layout.addWidget(title)
+
+        subtitle = QLabel("Folders being indexed and watched for changes.", card)
+        subtitle.setObjectName("CardSubtitle")
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        self.folder_list = QListWidget(card)
+        self.folder_list.setObjectName("OverviewFolderList")
+        self.folder_list.itemSelectionChanged.connect(self._sync_folder_actions)
+        layout.addWidget(self.folder_list, 1)
+
+        self.overview_folder_summary = QLabel("", card)
+        self.overview_folder_summary.setObjectName("CardSubtitle")
+        self.overview_folder_summary.setWordWrap(True)
+        layout.addWidget(self.overview_folder_summary)
+
+        row = QHBoxLayout()
+        row.setSpacing(10)
+
+        add_button = QPushButton("Add Folder", card)
+        add_button.setObjectName("PrimaryButton")
+        add_button.clicked.connect(self.add_folder)
+        add_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        row.addWidget(add_button)
+
+        self.remove_folder_button = QPushButton("Remove Folder", card)
+        self.remove_folder_button.setObjectName("DangerButton")
+        self.remove_folder_button.clicked.connect(self.remove_selected_folder)
+        self.remove_folder_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        row.addWidget(self.remove_folder_button)
+        layout.addLayout(row)
+        self._sync_folder_actions()
+        return card
+
+    def _build_overview_commands_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCommandCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        title = QLabel("Maintenance Commands", card)
+        title.setObjectName("CardTitle")
+        layout.addWidget(title)
+
+        subtitle = QLabel("Run common maintenance operations and send output to the Maintenance section.", card)
+        subtitle.setObjectName("CardSubtitle")
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        button_grid = QGridLayout()
+        button_grid.setHorizontalSpacing(10)
+        button_grid.setVerticalSpacing(10)
+        for index, (label, command, object_name) in enumerate(
+            (
+                ("Status", "status", "PrimaryButton"),
+                ("Audit", "audit", "PrimaryButton"),
+                ("Rebuild All", "rebuild-all", "GhostButton"),
+                ("Rebuild FTS", "rebuild-fts", "GhostButton"),
+            )
+        ):
+            button = QPushButton(label, card)
+            button.setObjectName(object_name)
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            button.clicked.connect(lambda _checked=False, selected=command: self._run_and_focus_maintenance(selected))
+            button_grid.addWidget(button, index // 2, index % 2)
+        layout.addLayout(button_grid)
+        return card
+
+    def _build_overview_reindex_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        title = QLabel("Reindex", card)
+        title.setObjectName("CardTitle")
+        layout.addWidget(title)
+
+        file_label = QLabel("Reindex a specific file path", card)
+        file_label.setObjectName("Eyebrow")
+        layout.addWidget(file_label)
+
+        self.reindex_path_input = QLineEdit(card)
+        self.reindex_path_input.setObjectName("PathInput")
+        self.reindex_path_input.setPlaceholderText("Choose a file to enqueue for reindexing")
+        layout.addWidget(self.reindex_path_input)
+
+        file_row = QHBoxLayout()
+        file_row.setSpacing(10)
+        file_browse = QPushButton("Browse File", card)
+        file_browse.setObjectName("GhostButton")
+        file_browse.clicked.connect(self.choose_file_path)
+        file_browse.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        file_row.addWidget(file_browse)
+
+        file_run = QPushButton("Run Reindex Path", card)
+        file_run.setObjectName("PrimaryButton")
+        file_run.clicked.connect(lambda: self._run_and_focus_maintenance("reindex-path", self.reindex_path_input.text().strip()))
+        file_run.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        file_row.addWidget(file_run)
+        layout.addLayout(file_row)
+
+        folder_label = QLabel("Reindex monitored folders", card)
+        folder_label.setObjectName("Eyebrow")
+        layout.addWidget(folder_label)
+
+        self.reindex_folder_input = QLineEdit(card)
+        self.reindex_folder_input.setObjectName("PathInput")
+        self.reindex_folder_input.setPlaceholderText("Choose a monitored folder or any supported document directory")
+        layout.addWidget(self.reindex_folder_input)
+
+        folder_row = QHBoxLayout()
+        folder_row.setSpacing(10)
+        folder_browse = QPushButton("Browse Folder", card)
+        folder_browse.setObjectName("GhostButton")
+        folder_browse.clicked.connect(self.choose_folder_path)
+        folder_browse.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        folder_row.addWidget(folder_browse)
+
+        folder_run = QPushButton("Run Reindex Folder", card)
+        folder_run.setObjectName("PrimaryButton")
+        folder_run.clicked.connect(lambda: self._run_and_focus_maintenance("reindex-folder", self.reindex_folder_input.text().strip()))
+        folder_run.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        folder_row.addWidget(folder_run)
+        layout.addLayout(folder_row)
+        return card
+
+    def _build_overview_failures_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("SettingsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        header = QHBoxLayout()
+        title = QLabel("Recent Failures", card)
+        title.setObjectName("CardTitle")
+        header.addWidget(title)
+        header.addStretch(1)
+
+        details_button = QPushButton("View Full Log", card)
+        details_button.setObjectName("GhostButton")
+        details_button.clicked.connect(lambda: self._select_section(self._section_indexes["health"]))
+        header.addWidget(details_button)
+        layout.addLayout(header)
+
+        subtitle = QLabel("Latest parser or indexing issues surfaced by Shelf.", card)
+        subtitle.setObjectName("CardSubtitle")
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        self.overview_failures_preview = QPlainTextEdit(card)
+        self.overview_failures_preview.setReadOnly(True)
+        self.overview_failures_preview.setMaximumBlockCount(50)
+        self.overview_failures_preview.setMinimumHeight(160)
+        layout.addWidget(self.overview_failures_preview)
+        return card
+
+    def _make_stat_card(self, parent: QWidget, label_text: str) -> tuple[QLabel, QFrame]:
+        card = QFrame(parent)
+        card.setObjectName("StatCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(6)
+        value = QLabel("0", card)
+        value.setObjectName("StatNumber")
+        value.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(value)
+        label = QLabel(label_text, card)
+        label.setObjectName("StatLabel")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        return value, card
+
+    def _render_shortcut_chips(self, shortcut: str) -> None:
+        while self.shortcut_chips_host.count():
+            item = self.shortcut_chips_host.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        for index, token in enumerate(part.strip() for part in shortcut.split("+") if part.strip()):
+            chip = QFrame(self)
+            chip.setObjectName("ShortcutChip")
+            chip_layout = QHBoxLayout(chip)
+            chip_layout.setContentsMargins(12, 8, 12, 8)
+            label = QLabel(token.replace("Meta", "Cmd").replace("Alt", "Option"), chip)
+            label.setObjectName("ShortcutChipLabel")
+            chip_layout.addWidget(label)
+            self.shortcut_chips_host.addWidget(chip)
+            if index < len([part for part in shortcut.split("+") if part.strip()]) - 1:
+                plus = QLabel("+", self)
+                plus.setObjectName("ShortcutPlus")
+                self.shortcut_chips_host.addWidget(plus)
+        self.shortcut_chips_host.addStretch(1)
+
+    def _select_section(self, index: int) -> None:
+        button = self.section_buttons.button(index)
+        if button is not None:
+            button.setChecked(True)
+        self.page_stack.setCurrentIndex(index)
+
+    def _run_and_focus_maintenance(self, command: str, path: str | None = None) -> None:
+        self.run_command(command, path)
+        if self.maintenance_output.toPlainText().strip():
+            self._select_section(self._section_indexes["maintenance"])
+
+    def _build_general_tab(self) -> QWidget:
+        tab, content, layout = self._make_scrollable_settings_page()
+
+        title = QLabel("Application", content)
         title.setObjectName("SectionTitle")
         layout.addWidget(title)
 
         subtitle = QLabel(
-            "Everything in Shelf stays local. Choose how you launch the app and inspect where its on-device data lives.",
-            tab,
+            "Choose which document types Shelf indexes and inspect where all local app data is stored on disk.",
+            content,
         )
         subtitle.setObjectName("SectionCaption")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
-        launch_card = QFrame(tab)
-        launch_card.setObjectName("SettingsCard")
-        launch_layout = QVBoxLayout(launch_card)
-        launch_layout.setContentsMargins(18, 18, 18, 18)
-        launch_layout.setSpacing(12)
-        layout.addWidget(launch_card)
+        shortcut_card = QFrame(content)
+        shortcut_card.setObjectName("SettingsCard")
+        shortcut_layout = QVBoxLayout(shortcut_card)
+        shortcut_layout.setContentsMargins(20, 20, 20, 20)
+        shortcut_layout.setSpacing(14)
+        layout.addWidget(shortcut_card)
 
-        shortcut_label = QLabel("Launcher shortcut", tab)
+        shortcut_label = QLabel("Launcher shortcut", shortcut_card)
         shortcut_label.setObjectName("Eyebrow")
-        launch_layout.addWidget(shortcut_label)
+        shortcut_layout.addWidget(shortcut_label)
 
         shortcut_caption = QLabel(
-            "This shortcut should show or hide Shelf from anywhere while the app is running. Default: Cmd+Option+S.",
-            tab,
+            "Overview shows the current shortcut. Use this editor to customize the actual key combination.",
+            shortcut_card,
         )
         shortcut_caption.setObjectName("SectionCaption")
         shortcut_caption.setWordWrap(True)
-        launch_layout.addWidget(shortcut_caption)
+        shortcut_layout.addWidget(shortcut_caption)
 
         shortcut_row = QHBoxLayout()
         self.launcher_shortcut_input = QKeySequenceEdit(
             QKeySequence(self.settings.launcher_shortcut or DEFAULT_LAUNCH_SHORTCUT),
-            tab,
+            content,
         )
         self.launcher_shortcut_input.setObjectName("PathInput")
         self.launcher_shortcut_input.editingFinished.connect(self.save_launcher_shortcut)
         shortcut_row.addWidget(self.launcher_shortcut_input, 1)
 
-        reset_shortcut = QPushButton("Reset Default", tab)
+        reset_shortcut = QPushButton("Reset Default", content)
+        reset_shortcut.setObjectName("GhostButton")
         reset_shortcut.clicked.connect(self.reset_launcher_shortcut)
         shortcut_row.addWidget(reset_shortcut)
-        launch_layout.addLayout(shortcut_row)
+        shortcut_layout.addLayout(shortcut_row)
 
-        storage_card = QFrame(tab)
+        types_card = QFrame(content)
+        types_card.setObjectName("SettingsCard")
+        types_layout = QVBoxLayout(types_card)
+        types_layout.setContentsMargins(20, 20, 20, 20)
+        types_layout.setSpacing(12)
+        layout.addWidget(types_card)
+
+        types_label = QLabel("Indexed document types", tab)
+        types_label.setObjectName("Eyebrow")
+        types_layout.addWidget(types_label)
+
+        types_caption = QLabel(
+            "Choose which document formats Shelf indexes. If you change these selections, Shelf can reindex to add or remove matching files.",
+            tab,
+        )
+        types_caption.setObjectName("SectionCaption")
+        types_caption.setWordWrap(True)
+        types_layout.addWidget(types_caption)
+
+        self.document_type_checkboxes: dict[str, QCheckBox] = {}
+        for extension, label in DOCUMENT_TYPE_LABELS.items():
+            checkbox = QCheckBox(f"{label} ({extension})", content)
+            checkbox.setObjectName("DocumentTypeCheckbox")
+            checkbox.setChecked(extension in set(self.settings.enabled_extensions))
+            self.document_type_checkboxes[extension] = checkbox
+            types_layout.addWidget(checkbox)
+
+        apply_types_button = QPushButton("Apply document type changes", content)
+        apply_types_button.setObjectName("PrimaryButton")
+        apply_types_button.clicked.connect(self.save_enabled_extensions)
+        types_layout.addWidget(apply_types_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        storage_card = QFrame(content)
         storage_card.setObjectName("SettingsCard")
         storage_layout = QVBoxLayout(storage_card)
-        storage_layout.setContentsMargins(18, 18, 18, 18)
+        storage_layout.setContentsMargins(20, 20, 20, 20)
         storage_layout.setSpacing(12)
         layout.addWidget(storage_card)
 
@@ -564,13 +1290,12 @@ class SettingsDialog(QDialog):
             ("Application Support", str(self.services.paths.root)),
             ("Settings File", str(self.services.paths.settings_file)),
             ("SQLite Database", str(self.services.paths.database_file)),
-            ("Supported Types", ", ".join(extension.upper() for extension in SUPPORTED_EXTENSIONS)),
         ):
-            label_widget = QLabel(label, tab)
+            label_widget = QLabel(label, content)
             label_widget.setObjectName("Eyebrow")
             storage_layout.addWidget(label_widget)
 
-            value_widget = QLineEdit(value, tab)
+            value_widget = QLineEdit(value, content)
             value_widget.setReadOnly(True)
             value_widget.setObjectName("PathInput")
             storage_layout.addWidget(value_widget)
@@ -578,65 +1303,16 @@ class SettingsDialog(QDialog):
         layout.addStretch(1)
         return tab
 
-    def _build_folders_tab(self) -> QWidget:
-        tab = QFrame(self)
-        tab.setObjectName("SettingsPane")
-        layout = QVBoxLayout(tab)
-        layout.setContentsMargins(22, 22, 22, 22)
-        layout.setSpacing(16)
-
-        title = QLabel("Monitored folders", tab)
-        title.setObjectName("SectionTitle")
-        layout.addWidget(title)
-
-        caption = QLabel(
-            "Choose which locations are indexed. Removed folders will disappear from results after reconciliation finishes.",
-            tab,
-        )
-        caption.setObjectName("SectionCaption")
-        caption.setWordWrap(True)
-        layout.addWidget(caption)
-
-        list_card = QFrame(tab)
-        list_card.setObjectName("SettingsCard")
-        list_layout = QVBoxLayout(list_card)
-        list_layout.setContentsMargins(16, 16, 16, 16)
-        list_layout.setSpacing(12)
-        layout.addWidget(list_card, 1)
-
-        self.folder_list = QListWidget(tab)
-        list_layout.addWidget(self.folder_list, 1)
-
-        controls = QHBoxLayout()
-        add_button = QPushButton("Add Folder", tab)
-        add_button.setObjectName("PrimaryButton")
-        add_button.clicked.connect(self.add_folder)
-        controls.addWidget(add_button)
-
-        remove_button = QPushButton("Remove Folder", tab)
-        remove_button.setObjectName("DangerButton")
-        remove_button.clicked.connect(self.remove_selected_folder)
-        controls.addWidget(remove_button)
-        controls.addStretch(1)
-        list_layout.addLayout(controls)
-
-        self.refresh_folder_list()
-        return tab
-
     def _build_monitor_tab(self) -> QWidget:
-        tab = QFrame(self)
-        tab.setObjectName("SettingsPane")
-        layout = QVBoxLayout(tab)
-        layout.setContentsMargins(22, 22, 22, 22)
-        layout.setSpacing(16)
+        tab, content, layout = self._make_scrollable_settings_page()
 
-        title = QLabel("Library health", tab)
+        title = QLabel("Library health", content)
         title.setObjectName("SectionTitle")
         layout.addWidget(title)
 
         caption = QLabel(
             "Keep an eye on indexing progress and recent parser or worker failures without leaving the settings surface.",
-            tab,
+            content,
         )
         caption.setObjectName("SectionCaption")
         caption.setWordWrap(True)
@@ -652,32 +1328,52 @@ class SettingsDialog(QDialog):
         pills_row.addStretch(1)
         layout.addLayout(pills_row)
 
-        overview_card = QFrame(tab)
+        folders_card = QFrame(content)
+        folders_card.setObjectName("SettingsCard")
+        folders_layout = QVBoxLayout(folders_card)
+        folders_layout.setContentsMargins(20, 20, 20, 20)
+        folders_layout.setSpacing(12)
+        layout.addWidget(folders_card)
+
+        folders_title = QLabel("Coverage and access", folders_card)
+        folders_title.setObjectName("Eyebrow")
+        folders_layout.addWidget(folders_title)
+
+        self.folder_audit_summary = QLabel("", folders_card)
+        self.folder_audit_summary.setObjectName("SectionCaption")
+        self.folder_audit_summary.setWordWrap(True)
+        folders_layout.addWidget(self.folder_audit_summary)
+
+        self.folder_audit_list = QListWidget(folders_card)
+        self.folder_audit_list.setObjectName("FolderAuditList")
+        folders_layout.addWidget(self.folder_audit_list)
+
+        overview_card = QFrame(content)
         overview_card.setObjectName("SettingsCard")
         overview_layout = QVBoxLayout(overview_card)
-        overview_layout.setContentsMargins(16, 16, 16, 16)
+        overview_layout.setContentsMargins(20, 20, 20, 20)
         overview_layout.setSpacing(12)
         layout.addWidget(overview_card, 1)
 
-        self.overview_text = QPlainTextEdit(tab)
+        self.overview_text = QPlainTextEdit(content)
         self.overview_text.setReadOnly(True)
         overview_layout.addWidget(self.overview_text, 1)
 
-        failures_title = QLabel("Recent failures", tab)
+        failures_title = QLabel("Recent failures", content)
         failures_title.setObjectName("Eyebrow")
         layout.addWidget(failures_title)
 
-        failures_card = QFrame(tab)
+        failures_card = QFrame(content)
         failures_card.setObjectName("SettingsCard")
         failures_layout = QVBoxLayout(failures_card)
-        failures_layout.setContentsMargins(16, 16, 16, 16)
+        failures_layout.setContentsMargins(20, 20, 20, 20)
         failures_layout.setSpacing(12)
         layout.addWidget(failures_card, 1)
 
-        self.failures_list = QListWidget(tab)
+        self.failures_list = QListWidget(content)
         failures_layout.addWidget(self.failures_list, 1)
 
-        refresh_button = QPushButton("Refresh health", tab)
+        refresh_button = QPushButton("Refresh health", content)
         refresh_button.setObjectName("PrimaryButton")
         refresh_button.clicked.connect(self.refresh_monitor_data)
         layout.addWidget(refresh_button, alignment=Qt.AlignmentFlag.AlignRight)
@@ -686,109 +1382,53 @@ class SettingsDialog(QDialog):
         return tab
 
     def _build_maintenance_tab(self) -> QWidget:
-        tab = QFrame(self)
-        tab.setObjectName("SettingsPane")
-        layout = QVBoxLayout(tab)
-        layout.setContentsMargins(22, 22, 22, 22)
-        layout.setSpacing(16)
+        tab, content, layout = self._make_scrollable_settings_page()
 
-        title = QLabel("Maintenance commands", tab)
+        title = QLabel("Maintenance commands", content)
         title.setObjectName("SectionTitle")
         layout.addWidget(title)
 
         caption = QLabel(
-            "These controls expose the same operational commands available in the CLI so users can repair or inspect the library without leaving the app.",
-            tab,
+            "Overview runs the command actions. This section keeps the latest output visible so maintenance work stays inspectable.",
+            content,
         )
         caption.setObjectName("SectionCaption")
         caption.setWordWrap(True)
         layout.addWidget(caption)
 
-        commands_card = QFrame(tab)
-        commands_card.setObjectName("SettingsCommandCard")
-        commands_layout = QVBoxLayout(commands_card)
-        commands_layout.setContentsMargins(16, 16, 16, 16)
-        commands_layout.setSpacing(12)
-        layout.addWidget(commands_card)
+        summary_card = QFrame(content)
+        summary_card.setObjectName("SettingsCard")
+        summary_layout = QVBoxLayout(summary_card)
+        summary_layout.setContentsMargins(20, 20, 20, 20)
+        summary_layout.setSpacing(12)
+        layout.addWidget(summary_card)
 
-        button_grid = QGridLayout()
-        button_grid.setHorizontalSpacing(10)
-        button_grid.setVerticalSpacing(10)
-        for index, (label, command) in enumerate(
-            (
-                ("Status", "status"),
-                ("Audit", "audit"),
-                ("Rebuild All", "rebuild-all"),
-                ("Rebuild FTS", "rebuild-fts"),
-            )
-        ):
-            button = QPushButton(label, tab)
-            if command in {"status", "audit"}:
-                button.setObjectName("PrimaryButton")
-            button.clicked.connect(lambda _checked=False, selected=command: self.run_command(selected))
-            button_grid.addWidget(button, 0, index)
-        commands_layout.addLayout(button_grid)
+        summary_title = QLabel("Last command activity", summary_card)
+        summary_title.setObjectName("Eyebrow")
+        summary_layout.addWidget(summary_title)
 
-        reindex_card = QFrame(tab)
-        reindex_card.setObjectName("SettingsCard")
-        reindex_layout = QVBoxLayout(reindex_card)
-        reindex_layout.setContentsMargins(16, 16, 16, 16)
-        reindex_layout.setSpacing(12)
-        layout.addWidget(reindex_card)
-
-        path_label = QLabel("Reindex a specific file path", tab)
-        path_label.setObjectName("Eyebrow")
-        reindex_layout.addWidget(path_label)
-
-        self.reindex_path_input = QLineEdit(tab)
-        self.reindex_path_input.setObjectName("PathInput")
-        self.reindex_path_input.setPlaceholderText("Choose a file to enqueue for reindexing")
-        reindex_layout.addWidget(self.reindex_path_input)
-
-        file_row = QHBoxLayout()
-        file_browse = QPushButton("Browse File", tab)
-        file_browse.clicked.connect(self.choose_file_path)
-        file_row.addWidget(file_browse)
-        file_run = QPushButton("Run Reindex Path", tab)
-        file_run.clicked.connect(lambda: self.run_command("reindex-path", self.reindex_path_input.text().strip()))
-        file_row.addWidget(file_run)
-        file_row.addStretch(1)
-        reindex_layout.addLayout(file_row)
-
-        folder_label = QLabel("Reindex every supported document in a folder", tab)
-        folder_label.setObjectName("Eyebrow")
-        reindex_layout.addWidget(folder_label)
-
-        self.reindex_folder_input = QLineEdit(tab)
-        self.reindex_folder_input.setObjectName("PathInput")
-        self.reindex_folder_input.setPlaceholderText("Choose a monitored folder or any supported document directory")
-        reindex_layout.addWidget(self.reindex_folder_input)
-
-        folder_row = QHBoxLayout()
-        folder_browse = QPushButton("Browse Folder", tab)
-        folder_browse.clicked.connect(self.choose_folder_path)
-        folder_row.addWidget(folder_browse)
-        folder_run = QPushButton("Run Reindex Folder", tab)
-        folder_run.clicked.connect(
-            lambda: self.run_command("reindex-folder", self.reindex_folder_input.text().strip())
+        summary_body = QLabel(
+            "Use the Overview section for status, audits, rebuilds, and reindex actions. The latest JSON output is preserved here.",
+            summary_card,
         )
-        folder_row.addWidget(folder_run)
-        folder_row.addStretch(1)
-        reindex_layout.addLayout(folder_row)
+        summary_body.setObjectName("SectionCaption")
+        summary_body.setWordWrap(True)
+        summary_layout.addWidget(summary_body)
 
-        output_card = QFrame(tab)
+        output_card = QFrame(content)
         output_card.setObjectName("SettingsCard")
         output_layout = QVBoxLayout(output_card)
-        output_layout.setContentsMargins(16, 16, 16, 16)
+        output_layout.setContentsMargins(20, 20, 20, 20)
         output_layout.setSpacing(12)
         layout.addWidget(output_card, 1)
 
-        self.maintenance_output = QPlainTextEdit(tab)
+        self.maintenance_output = QPlainTextEdit(content)
         self.maintenance_output.setObjectName("MaintenanceOutput")
         self.maintenance_output.setReadOnly(True)
         self.maintenance_output.setPlaceholderText("Command output will appear here.")
         output_layout.addWidget(self.maintenance_output, 1)
 
+        layout.addStretch(1)
         return tab
 
     def _make_pill(self) -> QLabel:
@@ -803,16 +1443,83 @@ class SettingsDialog(QDialog):
             item = QListWidgetItem(folder.path + suffix)
             item.setData(Qt.ItemDataRole.UserRole, folder.path)
             self.folder_list.addItem(item)
+        count = len(self.settings.monitored_folders)
+        accessible_count = sum(1 for folder in self.settings.monitored_folders if folder.accessible)
+        if hasattr(self, "overview_folder_summary"):
+            self.overview_folder_summary.setText(
+                f"{count} monitored folder{'s' if count != 1 else ''} configured. {accessible_count} currently accessible."
+            )
+        self._sync_folder_actions()
 
     def save_launcher_shortcut(self) -> None:
         sequence = self.launcher_shortcut_input.keySequence().toString(QKeySequence.SequenceFormat.PortableText)
         self.settings.launcher_shortcut = sequence or DEFAULT_LAUNCH_SHORTCUT
         self.services.settings.save(self.settings)
+        self._render_shortcut_chips(self.settings.launcher_shortcut)
+        if hasattr(self, "overview_shortcut_summary"):
+            self.overview_shortcut_summary.setText(
+                f"Current shortcut: {self.settings.launcher_shortcut.replace('Meta', 'Cmd').replace('Alt', 'Option')}"
+            )
         self.on_settings_changed()
+
+    def save_enabled_extensions(self) -> None:
+        selected = normalize_enabled_extensions(
+            [extension for extension, checkbox in self.document_type_checkboxes.items() if checkbox.isChecked()]
+        )
+        current = normalize_enabled_extensions(self.settings.enabled_extensions)
+        if selected == current:
+            self.status_message("Document types are unchanged.")
+            return
+        if not selected:
+            QMessageBox.warning(self, "Choose at least one type", "Shelf needs at least one document type enabled.")
+            return
+
+        answer = QMessageBox.question(
+            self,
+            "Reindex for document type changes?",
+            "Changing indexed document types can add new files and remove no-longer-selected ones from search results. Reindex now?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Yes,
+        )
+        if answer == QMessageBox.StandardButton.Cancel:
+            for extension, checkbox in self.document_type_checkboxes.items():
+                checkbox.setChecked(extension in current)
+            return
+
+        self.settings.enabled_extensions = selected
+        self.services.settings.save(self.settings)
+        self._update_enabled_extensions_summary()
+
+        if answer == QMessageBox.StandardButton.Yes:
+            self.app_controller.refresh_folders(self.settings)
+            self.refresh_folder_list()
+            self.refresh_monitor_data()
+            self.status_message("Queued reindex for updated document types.")
+        else:
+            self.status_message("Saved document types. Reindex later from Maintenance to apply changes.")
+        self.on_settings_changed()
+
+    def _update_enabled_extensions_summary(self) -> None:
+        labels = [DOCUMENT_TYPE_LABELS[extension] for extension in normalize_enabled_extensions(self.settings.enabled_extensions)]
+        if hasattr(self, "folder_audit_summary"):
+            summary = ", ".join(labels)
+            self.folder_audit_summary.setText(f"Indexed formats currently enabled: {summary}")
+
+    def status_message(self, message: str) -> None:
+        if self.parent() is not None and hasattr(self.parent(), "statusBar"):
+            try:
+                self.parent().statusBar().showMessage(message, 4000)
+                return
+            except Exception:
+                pass
 
     def reset_launcher_shortcut(self) -> None:
         self.launcher_shortcut_input.setKeySequence(QKeySequence(DEFAULT_LAUNCH_SHORTCUT))
         self.save_launcher_shortcut()
+
+    def _sync_folder_actions(self) -> None:
+        if hasattr(self, "remove_folder_button"):
+            self.remove_folder_button.setEnabled(self.folder_list.currentItem() is not None)
 
     def add_folder(self) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Choose Folder to Monitor", str(Path.home()))
@@ -853,11 +1560,12 @@ class SettingsDialog(QDialog):
         self.on_settings_changed()
 
     def choose_file_path(self) -> None:
+        supported_patterns = " ".join(f"*{extension}" for extension in DOCUMENT_TYPE_LABELS)
         selected, _ = QFileDialog.getOpenFileName(
             self,
             "Choose File to Reindex",
             str(Path.home()),
-            "Documents (*.pdf *.doc *.docx);;All Files (*)",
+            f"Documents ({supported_patterns});;All Files (*)",
         )
         if selected:
             self.reindex_path_input.setText(selected)
@@ -886,6 +1594,22 @@ class SettingsDialog(QDialog):
         self.documents_pill.setText(f"{status.indexed_documents} indexed")
         self.jobs_pill.setText(f"{status.queued_jobs} queued")
         self.failures_pill.setText(f"{status.recent_failures} failures")
+        self.summary_indexed_value.setText(str(status.indexed_documents))
+        self.summary_queued_value.setText(str(status.queued_jobs))
+        self.summary_failures_value.setText(str(status.recent_failures))
+        self.sidebar_status_detail.setText(
+            "All systems operational" if status.recent_failures == 0 else f"{status.recent_failures} recent failures need attention"
+        )
+        self.health_status_label.setText(
+            "● Shelf is healthy and up to date"
+            if status.recent_failures == 0 and status.queued_jobs == 0
+            else "● Shelf is indexing or needs attention"
+        )
+        if hasattr(self, "overview_shortcut_summary"):
+            self.overview_shortcut_summary.setText(
+                f"Current shortcut: {(self.settings.launcher_shortcut or DEFAULT_LAUNCH_SHORTCUT).replace('Meta', 'Cmd').replace('Alt', 'Option')}"
+            )
+        self._update_enabled_extensions_summary()
 
         overview_lines = [
             f"Monitored folders: {status.monitored_folders}",
@@ -898,13 +1622,28 @@ class SettingsDialog(QDialog):
         overview_lines.extend(f"- {folder.path}" for folder in self.settings.monitored_folders)
         self.overview_text.setPlainText("\n".join(overview_lines))
 
+        if hasattr(self, "folder_audit_list"):
+            self.folder_audit_list.clear()
+            for folder in self.settings.monitored_folders:
+                source = "Default" if folder.source == "default" else "User"
+                access = "Accessible" if folder.accessible else "Access needs attention"
+                self.folder_audit_list.addItem(f"{folder.path}\n{source} folder · {access}")
+
         self.failures_list.clear()
         failures = self.app_controller.recent_failures()
+        failure_preview_lines: list[str] = []
         if not failures:
             self.failures_list.addItem("No recent failures recorded.")
+            if hasattr(self, "overview_failures_preview"):
+                self.overview_failures_preview.setPlainText("No recent failures recorded.")
             return
         for failure in failures:
-            self.failures_list.addItem(self._format_failure(failure))
+            formatted = self._format_failure(failure)
+            self.failures_list.addItem(formatted)
+            if len(failure_preview_lines) < 3:
+                failure_preview_lines.append(formatted)
+        if hasattr(self, "overview_failures_preview"):
+            self.overview_failures_preview.setPlainText("\n\n".join(failure_preview_lines))
 
     def _format_failure(self, failure: FailureRecord) -> str:
         detail = f"\n{failure.detail}" if failure.detail else ""
@@ -913,17 +1652,40 @@ class SettingsDialog(QDialog):
 
     def mousePressEvent(self, event) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
+            resize_edges = self._resize_edges_for_global_pos(event.globalPosition().toPoint())
+            if resize_edges:
+                self._resize_edges = resize_edges
+                self._resize_start_global = event.globalPosition().toPoint()
+                self._resize_start_geometry = self.geometry()
+                event.accept()
+                return
             self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        global_pos = event.globalPosition().toPoint()
+        if self._resize_edges:
+            self._resize_window(global_pos)
+            event.accept()
+            return
+        self._update_resize_cursor(global_pos)
         if self._drag_offset is not None and event.buttons() & Qt.MouseButton.LeftButton:
-            self.move(event.globalPosition().toPoint() - self._drag_offset)
+            self.move(global_pos - self._drag_offset)
+            event.accept()
+            return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:  # noqa: N802
         self._drag_offset = None
+        self._resize_edges.clear()
+        self._resize_start_global = None
+        self._resize_start_geometry = None
+        self.unsetCursor()
         super().mouseReleaseEvent(event)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._refresh_overview_layout()
 
 
 class SearchResultsDialog(QDialog):
@@ -1104,12 +1866,19 @@ class SearchResultsDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
+    RESIZE_MARGIN = 10
+
     def __init__(self, services: ServiceContainer, settings: AppSettings, app_controller: ShelfApplication) -> None:
         super().__init__()
         self.services = services
         self.settings = settings
         self.app_controller = app_controller
         self._drag_offset: QPoint | None = None
+        self._resize_edges: set[str] = set()
+        self._resize_start_geometry = None
+        self._resize_start_global: QPoint | None = None
+        self._is_quitting = False
+        self._tray_message_shown = False
         self._search_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="shelf-ui-search")
         self._live_search_timer = QTimer(self)
         self._live_search_timer.setInterval(380)
@@ -1136,6 +1905,7 @@ class MainWindow(QMainWindow):
 
         self._build_actions()
         self._build_ui()
+        self._install_tray_icon()
         self._configure_launcher_shortcut()
         self.search_input.setFocus()
 
@@ -1148,6 +1918,18 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.open_settings)
         self.addAction(settings_action)
 
+        show_action = QAction("Show Shelf", self)
+        show_action.triggered.connect(self.show_search_window)
+        self.addAction(show_action)
+
+        hide_action = QAction("Hide Shelf", self)
+        hide_action.triggered.connect(self.hide_search_window)
+        self.addAction(hide_action)
+
+        quit_action = QAction("Quit Shelf", self)
+        quit_action.triggered.connect(self.quit_application)
+        self.addAction(quit_action)
+
     def _build_ui(self) -> None:
         status_bar = QStatusBar(self)
         status_bar.showMessage("Ready")
@@ -1159,6 +1941,8 @@ class MainWindow(QMainWindow):
         central.setObjectName("FloatingRoot")
         self.setCentralWidget(central)
         central.installEventFilter(self)
+        central.setMouseTracking(True)
+        self.setMouseTracking(True)
         root_layout = QVBoxLayout(central)
         root_layout.setContentsMargins(26, 26, 26, 26)
         root_layout.setSpacing(0)
@@ -1198,6 +1982,50 @@ class MainWindow(QMainWindow):
         root_layout.addLayout(composer_row)
         root_layout.addStretch(1)
 
+    def _install_tray_icon(self) -> None:
+        self.tray_icon: QSystemTrayIcon | None = None
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return
+
+        tray_icon = QSystemTrayIcon(self)
+        icon = QIcon(str(ICON_PATH)) if ICON_PATH.exists() else self.windowIcon()
+        tray_icon.setIcon(icon)
+        tray_icon.setToolTip("Shelf")
+
+        menu = QMenu(self)
+        show_action = menu.addAction("Show Shelf")
+        show_action.triggered.connect(self.show_search_window)
+        settings_action = menu.addAction("Open Settings")
+        settings_action.triggered.connect(self.open_settings)
+        hide_action = menu.addAction("Hide Shelf")
+        hide_action.triggered.connect(self.hide_search_window)
+        menu.addSeparator()
+        quit_action = menu.addAction("Quit Shelf")
+        quit_action.triggered.connect(self.quit_application)
+
+        tray_icon.setContextMenu(menu)
+        tray_icon.activated.connect(self._handle_tray_activation)
+        tray_icon.show()
+        self.tray_icon = tray_icon
+
+    def _handle_tray_activation(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason in {
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        }:
+            self.toggle_launcher_window()
+
+    def _show_tray_message_once(self) -> None:
+        if self.tray_icon is None or self._tray_message_shown:
+            return
+        self.tray_icon.showMessage(
+            "Shelf is still running",
+            "Shelf was hidden to the menu bar. Use the tray icon or launcher shortcut to bring it back.",
+            QSystemTrayIcon.MessageIcon.Information,
+            2500,
+        )
+        self._tray_message_shown = True
+
     def _apply_shadow(self, widget: QWidget, blur: int, offset_y: int, alpha: int) -> None:
         shadow = QGraphicsDropShadowEffect(widget)
         shadow.setBlurRadius(blur)
@@ -1208,24 +2036,91 @@ class MainWindow(QMainWindow):
         shadow.setColor(color)
         widget.setGraphicsEffect(shadow)
 
+    def _focus_search_input(self) -> None:
+        self.activateWindow()
+        self.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+
     def eventFilter(self, watched: object, event: object) -> bool:
         if hasattr(self, "search_input") and watched is self.search_input and event.type() == QEvent.Type.KeyPress:
             if self._handle_results_navigation_key(event):
                 return True
         if watched is self.centralWidget() and isinstance(event, QMouseEvent):
+            if event.type() == QEvent.Type.MouseMove and self._resize_edges:
+                self._resize_window(event.globalPosition().toPoint())
+                return True
             if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+                resize_edges = self._resize_edges_for_global_pos(event.globalPosition().toPoint())
+                if resize_edges:
+                    self._resize_edges = resize_edges
+                    self._resize_start_global = event.globalPosition().toPoint()
+                    self._resize_start_geometry = self.geometry()
+                    return True
                 widget = self.childAt(event.position().toPoint())
                 if isinstance(widget, (QLineEdit, QPushButton, QToolButton)):
                     return False
                 self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
                 return True
+            if event.type() == QEvent.Type.MouseMove:
+                self._update_resize_cursor(event.globalPosition().toPoint())
             if event.type() == QEvent.Type.MouseMove and self._drag_offset is not None:
                 self.move(event.globalPosition().toPoint() - self._drag_offset)
                 return True
             if event.type() == QEvent.Type.MouseButtonRelease:
                 self._drag_offset = None
+                self._resize_edges.clear()
+                self._resize_start_global = None
+                self._resize_start_geometry = None
                 return True
         return super().eventFilter(watched, event)
+
+    def _resize_edges_for_global_pos(self, global_pos: QPoint) -> set[str]:
+        frame = self.frameGeometry()
+        margin = self.RESIZE_MARGIN
+        edges: set[str] = set()
+        if abs(global_pos.x() - frame.left()) <= margin:
+            edges.add("left")
+        elif abs(global_pos.x() - frame.right()) <= margin:
+            edges.add("right")
+        if abs(global_pos.y() - frame.top()) <= margin:
+            edges.add("top")
+        elif abs(global_pos.y() - frame.bottom()) <= margin:
+            edges.add("bottom")
+        return edges
+
+    def _update_resize_cursor(self, global_pos: QPoint) -> None:
+        edges = self._resize_edges_for_global_pos(global_pos)
+        if edges == {"left"} or edges == {"right"}:
+            self.setCursor(Qt.CursorShape.SizeHorCursor)
+        elif edges == {"top"} or edges == {"bottom"}:
+            self.setCursor(Qt.CursorShape.SizeVerCursor)
+        elif edges in ({"left", "top"}, {"right", "bottom"}):
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        elif edges in ({"right", "top"}, {"left", "bottom"}):
+            self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+        elif self._drag_offset is None and not self._resize_edges:
+            self.unsetCursor()
+
+    def _resize_window(self, global_pos: QPoint) -> None:
+        if not self._resize_edges or self._resize_start_geometry is None or self._resize_start_global is None:
+            return
+
+        delta = global_pos - self._resize_start_global
+        geometry = self._resize_start_geometry.adjusted(0, 0, 0, 0)
+        minimum_width = max(self.minimumWidth(), 620)
+        minimum_height = max(self.minimumHeight(), 180)
+
+        if "left" in self._resize_edges:
+            new_left = min(geometry.right() - minimum_width, geometry.left() + delta.x())
+            geometry.setLeft(new_left)
+        if "right" in self._resize_edges:
+            geometry.setRight(max(geometry.left() + minimum_width, geometry.right() + delta.x()))
+        if "top" in self._resize_edges:
+            new_top = min(geometry.bottom() - minimum_height, geometry.top() + delta.y())
+            geometry.setTop(new_top)
+        if "bottom" in self._resize_edges:
+            geometry.setBottom(max(geometry.top() + minimum_height, geometry.bottom() + delta.y()))
+
+        self.setGeometry(geometry)
 
     def run_search(self) -> None:
         query = self.search_input.text().strip()
@@ -1239,6 +2134,8 @@ class MainWindow(QMainWindow):
         query = text.strip()
         self._queued_query = query
         self._navigating_results = False
+        if self.isVisible():
+            QTimer.singleShot(10, self._focus_search_input)
         if not query:
             self._live_search_timer.stop()
             self.results_popup.set_loading(False)
@@ -1252,7 +2149,7 @@ class MainWindow(QMainWindow):
         self.results_popup.anchor_below(self.composer_shell)
         self.results_popup.show()
         self.results_popup.raise_()
-        self.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+        QTimer.singleShot(10, self._focus_search_input)
 
     def _queue_live_search(self) -> None:
         query = self._queued_query or ""
@@ -1289,7 +2186,7 @@ class MainWindow(QMainWindow):
             return
         self.results_popup.set_loading(False)
         self.results_popup.show_for_query(self.composer_shell, self._active_query or "", results)
-        self.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+        QTimer.singleShot(10, self._focus_search_input)
 
     def open_primary_result(self) -> None:
         if self.results_popup.result_cards:
@@ -1328,16 +2225,23 @@ class MainWindow(QMainWindow):
     def show_search_window(self) -> None:
         if self._settings_dialog is not None and self._settings_dialog.isVisible():
             self._settings_dialog.hide()
-        self.move_to_top_of_screen()
+        if not self.isVisible():
+            self.move_to_top_of_screen()
         self.show()
+        self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized)
         self.raise_()
         self.activateWindow()
-        self.search_input.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        QTimer.singleShot(10, self._focus_search_input)
 
-    def hide_search_window(self) -> None:
+    def hide_to_tray(self) -> None:
         self._navigating_results = False
         self.results_popup.hide()
         self.hide()
+        self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized)
+        self._show_tray_message_once()
+
+    def hide_search_window(self) -> None:
+        self.hide_to_tray()
 
     def toggle_launcher_window(self) -> None:
         if self.isVisible():
@@ -1395,12 +2299,20 @@ class MainWindow(QMainWindow):
 
     def changeEvent(self, event) -> None:  # noqa: N802
         super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            QTimer.singleShot(0, self.hide_to_tray)
+            return
         if event.type() == QEvent.Type.ActivationChange and self.isVisible() and not self.isActiveWindow():
             self._handle_window_deactivated()
+
+    def quit_application(self) -> None:
+        self._is_quitting = True
+        QApplication.instance().quit()
 
     def showEvent(self, event) -> None:  # noqa: N802
         super().showEvent(event)
         self.move_to_top_of_screen()
+        QTimer.singleShot(10, self._focus_search_input)
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
@@ -1409,7 +2321,13 @@ class MainWindow(QMainWindow):
             self.results_popup.anchor_below(self.composer_shell)
 
     def closeEvent(self, event) -> None:  # noqa: N802
+        if not self._is_quitting:
+            event.ignore()
+            self.hide_to_tray()
+            return
         self.results_popup.close()
+        if self.tray_icon is not None:
+            self.tray_icon.hide()
         self._launcher_shortcut.close()
         self._search_executor.shutdown(wait=False, cancel_futures=True)
         super().closeEvent(event)

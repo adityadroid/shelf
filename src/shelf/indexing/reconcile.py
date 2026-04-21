@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from shelf.core.models import SUPPORTED_EXTENSIONS
 from shelf.indexing.models import JobType
 from shelf.storage.repositories import FolderRepository, JobRepository, ScannerStateRepository
 
@@ -14,11 +13,13 @@ class ReconciliationService:
         document_repository,
         job_repository: JobRepository,
         scanner_state: ScannerStateRepository,
+        supported_extensions: set[str],
     ) -> None:
         self.folder_repository = folder_repository
         self.document_repository = document_repository
         self.job_repository = job_repository
         self.scanner_state = scanner_state
+        self.supported_extensions = supported_extensions
 
     def run(self) -> None:
         discovered: set[str] = set()
@@ -27,7 +28,7 @@ class ReconciliationService:
             if not root.exists():
                 continue
             for path in root.rglob("*"):
-                if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+                if path.is_file() and path.suffix.lower() in self.supported_extensions:
                     normalized = str(path.resolve())
                     discovered.add(normalized)
                     self.job_repository.enqueue(

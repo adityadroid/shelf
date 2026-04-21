@@ -5,7 +5,7 @@ from typing import Iterable
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 
-from shelf.core.models import MonitoredFolder, SUPPORTED_EXTENSIONS
+from shelf.core.models import DOCUMENT_TYPE_LABELS, MonitoredFolder
 
 
 class OnboardingDialog(QDialog):
@@ -25,7 +25,7 @@ class OnboardingDialog(QDialog):
         layout.addWidget(intro)
 
         types_label = QLabel(
-            "Supported file types: " + ", ".join(extension.upper() for extension in SUPPORTED_EXTENSIONS)
+            "Supported file types: " + ", ".join(label for label in DOCUMENT_TYPE_LABELS.values())
         )
         types_label.setWordWrap(True)
         layout.addWidget(types_label)

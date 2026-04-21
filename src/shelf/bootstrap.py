@@ -71,6 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     application.setApplicationName("Shelf")
     application.setApplicationDisplayName("Shelf")
     application.setOrganizationName("Shelf")
+    application.setQuitOnLastWindowClosed(False)
     if ICON_PATH.exists():
         application.setWindowIcon(QIcon(str(ICON_PATH)))
 

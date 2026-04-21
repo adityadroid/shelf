@@ -7,6 +7,7 @@ from shelf.parsers.base import DocumentParser
 from shelf.parsers.doc_parser import DocParser
 from shelf.parsers.docx_parser import DocxParser
 from shelf.parsers.pdf_parser import PdfParser
+from shelf.parsers.text_parser import TextParser
 
 
 class ParserRegistry:
@@ -15,6 +16,9 @@ class ParserRegistry:
             ".pdf": PdfParser(),
             ".docx": DocxParser(),
             ".doc": DocParser(),
+            ".txt": TextParser(),
+            ".md": TextParser(),
+            ".markdown": TextParser(),
         }
 
     def get(self, extension: str) -> DocumentParser | None:

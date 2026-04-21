@@ -7,19 +7,19 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler, FileSystemM
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 
-from shelf.core.models import SUPPORTED_EXTENSIONS
 from shelf.indexing.models import JobType
 from shelf.storage.repositories import FolderRepository, JobRepository
 
 
-def is_supported_path(path: str) -> bool:
-    return Path(path).suffix.lower() in SUPPORTED_EXTENSIONS
+def is_supported_path(path: str, supported_extensions: set[str]) -> bool:
+    return Path(path).suffix.lower() in supported_extensions
 
 
 class QueueingEventHandler(FileSystemEventHandler):
-    def __init__(self, database) -> None:
+    def __init__(self, database, supported_extensions: set[str]) -> None:
         super().__init__()
         self.database = database
+        self.supported_extensions = supported_extensions
         self._recent: dict[str, str] = {}
         self._lock = threading.Lock()
 
@@ -27,7 +27,7 @@ class QueueingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = str(Path(event.src_path).resolve())
-        if not is_supported_path(path):
+        if not is_supported_path(path, self.supported_extensions):
             return
 
         with self._lock:
@@ -62,22 +62,28 @@ class WatcherService:
         self.database = database
         self.observer = PollingObserver()
         self._scheduled_paths: set[str] = set()
+        self._scheduled_extensions: set[str] = set()
 
     def refresh(self, paths: list[str]) -> None:
+        self.refresh_with_extensions(paths, set())
+
+    def refresh_with_extensions(self, paths: list[str], supported_extensions: set[str]) -> None:
         new_paths = set(paths)
-        if new_paths == self._scheduled_paths:
+        if new_paths == self._scheduled_paths and supported_extensions == self._scheduled_extensions:
             return
         self.stop()
         self.observer = PollingObserver()
-        handler = QueueingEventHandler(self.database)
+        handler = QueueingEventHandler(self.database, supported_extensions)
         for path in new_paths:
             self.observer.schedule(handler, path, recursive=True)
         if new_paths:
             self.observer.start()
         self._scheduled_paths = new_paths
+        self._scheduled_extensions = supported_extensions
 
     def stop(self) -> None:
         if self.observer.is_alive():
             self.observer.stop()
             self.observer.join(timeout=5)
         self._scheduled_paths = set()
+        self._scheduled_extensions = set()

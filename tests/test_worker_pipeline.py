@@ -56,3 +56,26 @@ def test_worker_indexes_docx_end_to_end(tmp_path):
     row = documents.get_by_path(str(doc_path.resolve()))
     assert row is not None
     assert "worker pipeline content" in row["raw_text"]
+
+
+def test_worker_indexes_text_file_end_to_end(tmp_path):
+    doc_path = tmp_path / "indexed.txt"
+    doc_path.write_text("worker text pipeline content", encoding="utf-8")
+
+    database = Database(AppPaths.discover(root_override=tmp_path / "support"))
+    database.initialize()
+    connection = database.connect()
+    folders = FolderRepository(connection)
+    folders.sync([MonitoredFolder(path=str(tmp_path.resolve()), source="default", accessible=True)])
+    documents = DocumentRepository(connection)
+    jobs = JobRepository(connection)
+    embedding = StubEmbeddingService()
+
+    jobs.enqueue(JobType.UPSERT, str(doc_path.resolve()), folder_id=folders.get_id_for_path(str(doc_path.resolve())))
+    connection.commit()
+    worker = IndexingWorker(database, embedding)
+
+    assert worker.process_one() is True
+    row = documents.get_by_path(str(doc_path.resolve()))
+    assert row is not None
+    assert "worker text pipeline content" in row["raw_text"]

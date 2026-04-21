@@ -3,7 +3,7 @@
 - Status: `Done`
 - Priority: `P0`
 - Depends On: `003`, `004`, `009`, `015`
-- Last Updated: `2026-04-20`
+- Last Updated: `2026-04-21`
 
 ## Objective
 
@@ -55,6 +55,10 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 - 2026-04-20 launcher behavior refresh: registered the macOS launcher shortcut to toggle the floating search surface at the top of the screen, rebuilt Settings to use the same floating glass design language as the main view, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
 - 2026-04-20 settings polish refresh: replaced the abstract settings header copy with product-facing language, reduced settings transparency for readability, aligned the shortcut field styling with the rest of the floating UI, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
 - 2026-04-20 search interaction refresh: reduced transparency on the floating search/results surfaces, hid the launcher when it loses focus, added keyboard-only result navigation and activation, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py tests/test_maintenance.py`
+- 2026-04-21 settings redesign refresh: shifted the app chrome to a cooler blue gradient palette, rebuilt the settings shell hierarchy with stronger cards/sidebar contrast, hardened launcher focus retention, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py` plus `uv run pytest`
+- 2026-04-21 overview dashboard refresh: adapted the AI mock into a real PySide6 overview dashboard with shortcut chips, live health stats, monitored-folder and maintenance cards, sidebar status, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py` plus `uv run pytest`
+- 2026-04-21 settings cleanup refresh: removed duplicated overview controls in favor of a true dashboard, aligned horizontal and vertical scrollbar styling, added configurable document-type settings with real TXT/Markdown parser support, prompted for reindex on document-type changes, and re-ran `uv run pytest`
+- 2026-04-21 resize and tray refresh: added tray-based hide/minimize behavior for the launcher, enabled edge resizing for the floating search window and settings dialog, made settings pages responsive and scrollable instead of clipping, refined the settings close control, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py`
 
 ## Risks and Notes
 

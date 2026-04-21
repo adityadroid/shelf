@@ -69,14 +69,19 @@ class ShelfApplication:
             self.document_repository,
             self.job_repository,
             self.scanner_state,
+            set(self.settings.enabled_extensions),
         )
 
     def start(self) -> None:
         self.sync_settings()
+        self.reconciliation.supported_extensions = set(self.settings.enabled_extensions)
         self.reconciliation.run()
         self.connection.commit()
         self.worker_loop.start()
-        self.watcher.refresh([folder.path for folder in self.settings.monitored_folders if folder.accessible])
+        self.watcher.refresh_with_extensions(
+            [folder.path for folder in self.settings.monitored_folders if folder.accessible],
+            set(self.settings.enabled_extensions),
+        )
         LOGGER.info("Shelf services started")
 
     def stop(self) -> None:
@@ -92,9 +97,13 @@ class ShelfApplication:
     def refresh_folders(self, settings: AppSettings) -> None:
         self.settings = settings
         self.sync_settings()
+        self.reconciliation.supported_extensions = set(self.settings.enabled_extensions)
         self.reconciliation.run()
         self.connection.commit()
-        self.watcher.refresh([folder.path for folder in self.settings.monitored_folders if folder.accessible])
+        self.watcher.refresh_with_extensions(
+            [folder.path for folder in self.settings.monitored_folders if folder.accessible],
+            set(self.settings.enabled_extensions),
+        )
 
     def search(self, query: str):
         return self.search_service.search(query)
