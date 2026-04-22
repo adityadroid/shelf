@@ -55,6 +55,9 @@ class SentenceTransformerEmbedder:
 
 
 class EmbeddingService:
+    # Known safe batch limit - Chroma default is 5461, we use a conservative default
+    DEFAULT_MAX_BATCH_SIZE = 5000
+
     def __init__(self, paths: AppPaths) -> None:
         self.paths = paths
         self.client = chromadb.PersistentClient(path=str(paths.vectors_dir))
@@ -63,6 +66,21 @@ class EmbeddingService:
             metadata={"space": "cosine"},
         )
         self._embedder = None
+        self._max_batch_size: int | None = None
+
+    @property
+    def max_batch_size(self) -> int:
+        """Get the maximum batch size from Chroma client, with safe fallback."""
+        if self._max_batch_size is None:
+            try:
+                self._max_batch_size = max(1, int(self.client.get_max_batch_size()))
+            except Exception:
+                LOGGER.warning(
+                    "Could not detect Chroma max batch size, using default %s",
+                    self.DEFAULT_MAX_BATCH_SIZE,
+                )
+                self._max_batch_size = self.DEFAULT_MAX_BATCH_SIZE
+        return self._max_batch_size
 
     @property
     def embedder(self):
@@ -83,6 +101,7 @@ class EmbeddingService:
 
         texts = [chunk.text for chunk in chunk_list]
         embeddings = self.embedder.encode(texts)
+        ids = [chunk.chunk_id for chunk in chunk_list]
         metadatas = [
             {
                 "document_id": document_id,
@@ -91,12 +110,17 @@ class EmbeddingService:
             }
             for chunk in chunk_list
         ]
-        self.collection.upsert(
-            ids=[chunk.chunk_id for chunk in chunk_list],
-            documents=texts,
-            embeddings=embeddings,
-            metadatas=metadatas,
-        )
+
+        # Batch upsert to respect Chroma's max batch size
+        batch_size = self.max_batch_size
+        for i in range(0, len(ids), batch_size):
+            self.collection.upsert(
+                ids=ids[i : i + batch_size],
+                documents=texts[i : i + batch_size],
+                embeddings=embeddings[i : i + batch_size],
+                metadatas=metadatas[i : i + batch_size],
+            )
+
         return self.embedder.model_name, self.embedder.model_version
 
     def delete_document(self, document_id: str) -> None:

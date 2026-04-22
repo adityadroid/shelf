@@ -58,7 +58,8 @@ QMainWindow, QDialog {
     background: transparent;
 }
 QWidget {
-    color: #dbeafe;
+    color: #edf2f7;
+    font-family: "Geist", "SF Pro Display", "Helvetica Neue";
     font-size: 14px;
     background: transparent;
 }
@@ -66,139 +67,176 @@ QWidget#FloatingRoot {
     background: transparent;
 }
 QFrame#GlassPanel, QFrame#EmptyCard {
-    background: rgba(15, 23, 42, 0.84);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 24px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid rgba(226, 232, 240, 0.16);
+    border-radius: 22px;
 }
 QFrame#ComposerShell {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(15, 23, 42, 0.96),
-        stop: 0.55 rgba(30, 41, 59, 0.96),
-        stop: 1 rgba(37, 99, 235, 0.74)
+        stop: 0 rgba(11, 18, 32, 0.98),
+        stop: 0.46 rgba(25, 36, 54, 0.98),
+        stop: 0.78 rgba(52, 42, 30, 0.96),
+        stop: 1 rgba(15, 118, 110, 0.72)
     );
-    border: 1px solid rgba(125, 211, 252, 0.28);
-    border-radius: 24px;
+    border: 1px solid rgba(250, 204, 21, 0.24);
+    border-radius: 20px;
 }
 QFrame#ResultsShell {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(15, 23, 42, 0.9),
-        stop: 0.55 rgba(21, 31, 51, 0.92),
-        stop: 1 rgba(30, 41, 59, 0.88)
+        stop: 0 rgba(9, 14, 25, 0.96),
+        stop: 0.52 rgba(23, 31, 44, 0.94),
+        stop: 1 rgba(42, 49, 43, 0.92)
     );
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    border-radius: 28px;
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 24px;
 }
 QFrame#ResultCard {
-    background: rgba(30, 41, 59, 0.42);
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    border-radius: 14px;
+    background: rgba(31, 41, 55, 0.54);
+    border: 1px solid rgba(226, 232, 240, 0.1);
+    border-radius: 12px;
 }
 QFrame#ResultCard[active="true"] {
-    background: rgba(37, 99, 235, 0.18);
-    border: 1px solid rgba(96, 165, 250, 0.28);
+    background: rgba(20, 184, 166, 0.16);
+    border: 1px solid rgba(94, 234, 212, 0.32);
 }
 QFrame#ResultCard:hover, QFrame#GlassPanel:hover, QFrame#EmptyCard:hover {
-    background: rgba(51, 65, 85, 0.48);
-    border: 1px solid rgba(125, 211, 252, 0.16);
+    background: rgba(55, 65, 81, 0.58);
+    border: 1px solid rgba(251, 191, 36, 0.16);
 }
 QFrame#SettingsShell {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(8, 15, 33, 0.98),
-        stop: 0.45 rgba(15, 23, 42, 0.98),
-        stop: 1 rgba(30, 64, 175, 0.78)
+        stop: 0 rgba(8, 13, 23, 0.99),
+        stop: 0.38 rgba(18, 24, 35, 0.99),
+        stop: 0.74 rgba(38, 35, 30, 0.97),
+        stop: 1 rgba(15, 118, 110, 0.82)
     );
-    border: 1px solid rgba(96, 165, 250, 0.24);
-    border-radius: 30px;
+    border: 1px solid rgba(250, 204, 21, 0.16);
+    border-radius: 28px;
 }
 QFrame#SettingsHero {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(37, 99, 235, 0.28),
-        stop: 0.55 rgba(30, 41, 59, 0.52),
-        stop: 1 rgba(14, 165, 233, 0.18)
+        stop: 0 rgba(250, 204, 21, 0.13),
+        stop: 0.5 rgba(17, 24, 39, 0.58),
+        stop: 1 rgba(20, 184, 166, 0.17)
     );
-    border: 1px solid rgba(191, 219, 254, 0.18);
-    border-radius: 24px;
-}
-QFrame#SettingsSidebar {
-    background: rgba(15, 23, 42, 0.72);
-    border: 1px solid rgba(148, 163, 184, 0.14);
+    border: 1px solid rgba(253, 230, 138, 0.18);
     border-radius: 22px;
 }
+QFrame#SettingsSidebar {
+    background: rgba(9, 14, 25, 0.82);
+    border: 1px solid rgba(226, 232, 240, 0.1);
+    border-radius: 20px;
+}
 QFrame#SettingsPane {
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.34);
+    border: 1px solid rgba(226, 232, 240, 0.08);
+    border-radius: 22px;
 }
 QFrame#SettingsOverviewPane {
     background: transparent;
     border: none;
 }
 QFrame#SettingsCard, QFrame#SettingsCommandCard {
-    background: rgba(51, 65, 85, 0.28);
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 20px;
+    background: rgba(31, 41, 55, 0.42);
+    border: 1px solid rgba(226, 232, 240, 0.12);
+    border-radius: 16px;
 }
-QFrame#StatCard, QFrame#SidebarStatusCard, QFrame#ShortcutChip {
-    background: rgba(15, 23, 42, 0.44);
-    border: 1px solid rgba(148, 163, 184, 0.16);
+QFrame#OverviewHeroCard {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 rgba(250, 204, 21, 0.1),
+        stop: 0.34 rgba(31, 41, 55, 0.52),
+        stop: 1 rgba(20, 184, 166, 0.13)
+    );
+    border: 1px solid rgba(253, 230, 138, 0.16);
+    border-radius: 18px;
+}
+QFrame#OverviewHeroPanel {
+    background: rgba(9, 14, 25, 0.44);
+    border: 1px solid rgba(226, 232, 240, 0.1);
     border-radius: 14px;
 }
-QFrame#ShortcutChip {
-    background: rgba(30, 41, 59, 0.8);
+QFrame#SettingsSplitPane {
+    background: rgba(9, 14, 25, 0.34);
+    border: 1px solid rgba(226, 232, 240, 0.1);
+    border-radius: 16px;
+}
+QFrame#SettingsRow {
+    background: rgba(15, 23, 42, 0.42);
+    border: 1px solid rgba(226, 232, 240, 0.08);
+    border-radius: 12px;
+}
+QFrame#FileTypeBadge {
+    background: rgba(250, 204, 21, 0.14);
+    border: 1px solid rgba(253, 230, 138, 0.24);
     border-radius: 10px;
 }
+QLabel#FileTypeBadgeText {
+    color: #fef9c3;
+    font-size: 11px;
+    font-weight: 800;
+}
+QFrame#StatCard, QFrame#SidebarStatusCard, QFrame#ShortcutChip {
+    background: rgba(9, 14, 25, 0.6);
+    border: 1px solid rgba(226, 232, 240, 0.12);
+    border-radius: 12px;
+}
+QFrame#ShortcutChip {
+    background: rgba(250, 204, 21, 0.12);
+    border-radius: 8px;
+}
 QLabel#Eyebrow {
-    color: #60a5fa;
+    color: #facc15;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
 }
 QLabel#HeroTitle {
-    color: #eff6ff;
+    color: #f8fafc;
     font-size: 36px;
     font-weight: 600;
 }
 QLabel#HeroSubtitle {
-    color: rgba(219, 234, 254, 0.84);
+    color: rgba(226, 232, 240, 0.78);
     font-size: 14px;
 }
 QLabel#SectionTitle {
-    color: #e2e8f0;
+    color: #f8fafc;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 QLabel#SettingsTitle {
-    color: #f8fbff;
+    color: #f8fafc;
     font-size: 32px;
     font-weight: 600;
 }
 QLabel#SettingsSubtitle {
-    color: rgba(219, 234, 254, 0.8);
+    color: rgba(226, 232, 240, 0.78);
     font-size: 14px;
 }
 QLabel#CardTitle {
-    color: #f8fbff;
+    color: #f8fafc;
     font-size: 14px;
     font-weight: 700;
 }
 QLabel#CardSubtitle, QLabel#NavMeta, QLabel#SidebarStatusMeta {
-    color: rgba(191, 219, 254, 0.74);
+    color: rgba(203, 213, 225, 0.74);
     font-size: 12px;
 }
 QLabel#StatNumber {
-    color: #38bdf8;
+    color: #5eead4;
     font-size: 28px;
     font-weight: 700;
 }
 QLabel#StatLabel {
-    color: rgba(219, 234, 254, 0.82);
+    color: rgba(226, 232, 240, 0.78);
     font-size: 11px;
 }
 QLabel#StatusOkay {
@@ -207,20 +245,20 @@ QLabel#StatusOkay {
     font-weight: 600;
 }
 QLabel#ShortcutPlus {
-    color: rgba(219, 234, 254, 0.84);
+    color: rgba(253, 230, 138, 0.84);
     font-size: 16px;
     font-weight: 700;
 }
 QLabel#ShortcutChipLabel {
-    color: #f8fbff;
+    color: #fef9c3;
     font-size: 12px;
     font-weight: 700;
 }
 QLabel#SectionCaption, QLabel#MetaText, QLabel#PathText, QLabel#ComposerHint {
-    color: rgba(191, 219, 254, 0.82);
+    color: rgba(203, 213, 225, 0.82);
 }
 QLabel#ResultTitle {
-    color: #f8fbff;
+    color: #f8fafc;
     font-size: 13px;
     font-weight: 700;
 }
@@ -228,46 +266,46 @@ QLabel#PathText {
     font-size: 10px;
 }
 QPushButton#RevealButton {
-    background: rgba(37, 99, 235, 0.16);
-    border: 1px solid rgba(96, 165, 250, 0.18);
-    border-radius: 10px;
-    color: #dbeafe;
+    background: rgba(20, 184, 166, 0.16);
+    border: 1px solid rgba(94, 234, 212, 0.22);
+    border-radius: 8px;
+    color: #f0fdfa;
     font-size: 12px;
     min-height: 32px;
     max-height: 32px;
     padding: 0 12px;
 }
 QPushButton#RevealButton:hover {
-    background: rgba(37, 99, 235, 0.24);
+    background: rgba(20, 184, 166, 0.28);
 }
 QLabel#Pill {
-    background: rgba(37, 99, 235, 0.18);
-    border: 1px solid rgba(96, 165, 250, 0.28);
-    border-radius: 14px;
-    color: #dbeafe;
+    background: rgba(20, 184, 166, 0.14);
+    border: 1px solid rgba(94, 234, 212, 0.28);
+    border-radius: 12px;
+    color: #ccfbf1;
     font-size: 12px;
     font-weight: 600;
     padding: 6px 12px;
 }
 QLabel#EmptyTitle {
-    color: #eff6ff;
+    color: #f8fafc;
     font-size: 18px;
     font-weight: 700;
 }
 QLabel#EmptyBody {
-    color: rgba(191, 219, 254, 0.78);
+    color: rgba(203, 213, 225, 0.78);
     font-size: 12px;
 }
 QLineEdit#SearchInput, QLineEdit#PathInput, QKeySequenceEdit#PathInput, QPlainTextEdit#MaintenanceOutput {
-    background: rgba(15, 23, 42, 0.72);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 14px;
-    color: #eff6ff;
+    background: rgba(9, 14, 25, 0.72);
+    border: 1px solid rgba(226, 232, 240, 0.14);
+    border-radius: 12px;
+    color: #f8fafc;
     padding: 14px 18px;
-    selection-background-color: rgba(59, 130, 246, 0.5);
+    selection-background-color: rgba(20, 184, 166, 0.46);
 }
 QLineEdit#PathInput[readOnly="true"] {
-    color: rgba(219, 234, 254, 0.92);
+    color: rgba(226, 232, 240, 0.92);
 }
 QKeySequenceEdit#PathInput {
     min-height: 48px;
@@ -276,72 +314,72 @@ QKeySequenceEdit#PathInput {
 QKeySequenceEdit#PathInput::part(lineedit) {
     background: transparent;
     border: none;
-    color: #eff6ff;
+    color: #f8fafc;
 }
 QLineEdit#SearchInput {
     background: transparent;
     border: none;
-    color: #eff6ff;
+    color: #f8fafc;
     font-size: 17px;
     font-weight: 600;
     padding: 10px 10px;
 }
 QLineEdit#SearchInput::placeholder, QLineEdit#PathInput::placeholder, QPlainTextEdit#MaintenanceOutput::placeholder {
-    color: rgba(148, 163, 184, 0.74);
+    color: rgba(148, 163, 184, 0.78);
 }
 QLineEdit#PathInput:focus, QKeySequenceEdit#PathInput:focus, QPlainTextEdit#MaintenanceOutput:focus {
-    border: 1px solid rgba(96, 165, 250, 0.68);
+    border: 1px solid rgba(94, 234, 212, 0.58);
 }
 QCheckBox#DocumentTypeCheckbox {
-    color: #dbeafe;
+    color: #e2e8f0;
     spacing: 10px;
     padding: 4px 0;
 }
 QCheckBox#DocumentTypeCheckbox::indicator {
     width: 18px;
     height: 18px;
-    border-radius: 5px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: rgba(15, 23, 42, 0.72);
+    border-radius: 4px;
+    border: 1px solid rgba(203, 213, 225, 0.28);
+    background: rgba(9, 14, 25, 0.72);
 }
 QCheckBox#DocumentTypeCheckbox::indicator:checked {
-    background: #2563eb;
-    border: 1px solid rgba(191, 219, 254, 0.42);
+    background: #14b8a6;
+    border: 1px solid rgba(204, 251, 241, 0.48);
 }
 QPushButton {
-    background: rgba(51, 65, 85, 0.56);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 14px;
-    color: #dbeafe;
+    background: rgba(31, 41, 55, 0.7);
+    border: 1px solid rgba(226, 232, 240, 0.14);
+    border-radius: 10px;
+    color: #f8fafc;
     font-weight: 600;
     min-height: 40px;
     padding: 0 18px;
 }
 QPushButton:hover {
-    background: rgba(71, 85, 105, 0.72);
-    border: 1px solid rgba(125, 211, 252, 0.22);
+    background: rgba(55, 65, 81, 0.86);
+    border: 1px solid rgba(253, 230, 138, 0.2);
 }
 QPushButton#PrimaryButton {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 0,
-        stop: 0 #2563eb,
-        stop: 1 #0ea5e9
+        stop: 0 #0f766e,
+        stop: 1 #14b8a6
     );
-    border: 1px solid rgba(191, 219, 254, 0.26);
-    color: #eff6ff;
+    border: 1px solid rgba(204, 251, 241, 0.28);
+    color: #f8fafc;
     padding: 0 18px;
 }
 QPushButton#PrimaryButton:hover {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 0,
-        stop: 0 #3b82f6,
-        stop: 1 #38bdf8
+        stop: 0 #0d9488,
+        stop: 1 #2dd4bf
     );
 }
 QPushButton#GhostButton {
-    background: rgba(15, 23, 42, 0.58);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    color: #dbeafe;
+    background: rgba(9, 14, 25, 0.58);
+    border: 1px solid rgba(226, 232, 240, 0.14);
+    color: #e2e8f0;
     padding: 0 16px;
 }
 QPushButton#DangerButton {
@@ -355,8 +393,8 @@ QPushButton#DangerButton:hover {
 QPushButton#SettingsNavButton {
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 16px;
-    color: rgba(191, 219, 254, 0.7);
+    border-radius: 12px;
+    color: rgba(203, 213, 225, 0.72);
     font-size: 14px;
     font-weight: 600;
     min-height: 56px;
@@ -364,32 +402,32 @@ QPushButton#SettingsNavButton {
     text-align: left;
 }
 QPushButton#SettingsNavButton:hover {
-    background: rgba(37, 99, 235, 0.12);
-    color: #eff6ff;
+    background: rgba(250, 204, 21, 0.08);
+    color: #f8fafc;
 }
 QPushButton#SettingsNavButton:checked {
-    background: rgba(37, 99, 235, 0.18);
-    border: 1px solid rgba(96, 165, 250, 0.28);
-    color: #f8fbff;
+    background: rgba(20, 184, 166, 0.14);
+    border: 1px solid rgba(94, 234, 212, 0.26);
+    color: #f8fafc;
 }
 QToolButton {
-    background: rgba(241, 245, 249, 0.92);
-    border: 1px solid rgba(191, 219, 254, 0.62);
-    border-radius: 14px;
+    background: rgba(248, 250, 252, 0.92);
+    border: 1px solid rgba(253, 230, 138, 0.4);
+    border-radius: 12px;
     color: #0f172a;
     padding: 8px 10px;
 }
 QToolButton#SettingsIconButton {
-    background: rgba(37, 99, 235, 0.18);
-    border: 1px solid rgba(125, 211, 252, 0.24);
-    border-radius: 16px;
-    color: #eff6ff;
+    background: rgba(250, 204, 21, 0.13);
+    border: 1px solid rgba(253, 230, 138, 0.24);
+    border-radius: 12px;
+    color: #fef9c3;
     font-size: 20px;
     font-weight: 700;
     padding: 6px;
 }
 QToolButton#SettingsIconButton:hover {
-    background: rgba(37, 99, 235, 0.3);
+    background: rgba(250, 204, 21, 0.22);
 }
 QToolButton#SettingsCloseButton {
     background: rgba(30, 41, 59, 0.6);
@@ -420,7 +458,7 @@ QScrollBar:vertical {
     margin: 10px 8px 10px 0;
 }
 QScrollBar::handle:vertical {
-    background: rgba(96, 165, 250, 0.35);
+    background: rgba(20, 184, 166, 0.42);
     border-radius: 3px;
     min-height: 26px;
 }
@@ -430,7 +468,7 @@ QScrollBar:horizontal {
     margin: 0 10px 8px 10px;
 }
 QScrollBar::handle:horizontal {
-    background: rgba(96, 165, 250, 0.35);
+    background: rgba(20, 184, 166, 0.42);
     border-radius: 3px;
     min-width: 26px;
 }
@@ -443,20 +481,20 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
     width: 0;
 }
 QProgressBar {
-    background: rgba(51, 65, 85, 0.42);
+    background: rgba(31, 41, 55, 0.5);
     border: none;
     border-radius: 3px;
     max-height: 6px;
 }
 QProgressBar::chunk {
-    background: rgba(96, 165, 250, 0.9);
+    background: rgba(20, 184, 166, 0.9);
     border-radius: 3px;
 }
 QListWidget, QPlainTextEdit {
-    background: rgba(15, 23, 42, 0.52);
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    border-radius: 16px;
-    color: #eff6ff;
+    background: rgba(9, 14, 25, 0.58);
+    border: 1px solid rgba(226, 232, 240, 0.11);
+    border-radius: 12px;
+    color: #f8fafc;
 }
 QListWidget {
     padding: 8px;
@@ -479,12 +517,12 @@ QListWidget::item {
     padding: 10px 12px;
 }
 QListWidget::item:selected {
-    background: rgba(37, 99, 235, 0.22);
-    color: #f8fbff;
+    background: rgba(20, 184, 166, 0.18);
+    color: #f8fafc;
 }
 QStatusBar {
     background: transparent;
-    color: rgba(191, 219, 254, 0.78);
+    color: rgba(203, 213, 225, 0.78);
 }
 """
 
@@ -520,6 +558,17 @@ class SearchResultCard(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 14, 14, 14)
         layout.setSpacing(14)
+
+        extension_badge = QFrame(self)
+        extension_badge.setObjectName("FileTypeBadge")
+        extension_badge.setFixedSize(46, 46)
+        badge_layout = QVBoxLayout(extension_badge)
+        badge_layout.setContentsMargins(0, 0, 0, 0)
+        badge_text = QLabel(result.extension.replace(".", "").upper() or "DOC", extension_badge)
+        badge_text.setObjectName("FileTypeBadgeText")
+        badge_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge_layout.addWidget(badge_text)
+        layout.addWidget(extension_badge, alignment=Qt.AlignmentFlag.AlignCenter)
 
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
@@ -633,7 +682,7 @@ class SettingsDialog(QDialog):
 
         title_column = QVBoxLayout()
         title_column.setSpacing(4)
-        eyebrow = QLabel("Control room", header)
+        eyebrow = QLabel("Local command center", header)
         eyebrow.setObjectName("Eyebrow")
         title_column.addWidget(eyebrow)
 
@@ -643,7 +692,7 @@ class SettingsDialog(QDialog):
         title_column.addWidget(title)
 
         subtitle = QLabel(
-            "Manage the launcher shortcut, monitored folders, indexing health, and maintenance tools from one place.",
+            "Tune the launcher, file coverage, indexing health, and repair tools without leaving the desktop flow.",
             header,
         )
         subtitle.setObjectName("SettingsSubtitle")
@@ -840,13 +889,12 @@ class SettingsDialog(QDialog):
         title.setObjectName("SectionTitle")
         layout.addWidget(title)
 
-        subtitle = QLabel("Use this space for the controls and signals that matter most while Shelf is running.", content)
+        subtitle = QLabel("A focused operating surface for shortcut access, library coverage, health signals, and repair actions.", content)
         subtitle.setObjectName("SectionCaption")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
-        self.overview_shortcut_card = self._build_overview_shortcut_card(content)
-        self.overview_health_card = self._build_overview_health_card(content)
+        self.overview_hero_card = self._build_overview_hero_card(content)
         self.overview_folders_card = self._build_overview_folders_card(content)
         self.overview_commands_card = self._build_overview_commands_card(content)
         self.overview_reindex_card = self._build_overview_reindex_card(content)
@@ -868,8 +916,7 @@ class SettingsDialog(QDialog):
         wide = available_width >= 1120
 
         if wide:
-            self.overview_grid.addWidget(self.overview_shortcut_card, 0, 0)
-            self.overview_grid.addWidget(self.overview_health_card, 0, 1)
+            self.overview_grid.addWidget(self.overview_hero_card, 0, 0, 1, 2)
             self.overview_grid.addWidget(self.overview_folders_card, 1, 0)
 
             right_column = QVBoxLayout()
@@ -882,13 +929,102 @@ class SettingsDialog(QDialog):
             self.overview_grid.setColumnStretch(0, 5)
             self.overview_grid.setColumnStretch(1, 4)
         else:
-            self.overview_grid.addWidget(self.overview_shortcut_card, 0, 0)
-            self.overview_grid.addWidget(self.overview_health_card, 1, 0)
-            self.overview_grid.addWidget(self.overview_folders_card, 2, 0)
-            self.overview_grid.addWidget(self.overview_commands_card, 3, 0)
-            self.overview_grid.addWidget(self.overview_reindex_card, 4, 0)
-            self.overview_grid.addWidget(self.overview_failures_card, 5, 0)
+            self.overview_grid.addWidget(self.overview_hero_card, 0, 0)
+            self.overview_grid.addWidget(self.overview_folders_card, 1, 0)
+            self.overview_grid.addWidget(self.overview_commands_card, 2, 0)
+            self.overview_grid.addWidget(self.overview_reindex_card, 3, 0)
+            self.overview_grid.addWidget(self.overview_failures_card, 4, 0)
             self.overview_grid.setColumnStretch(0, 1)
+
+    def _build_overview_hero_card(self, parent: QWidget) -> QFrame:
+        card = QFrame(parent)
+        card.setObjectName("OverviewHeroCard")
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(22, 22, 22, 22)
+        layout.setSpacing(18)
+
+        shortcut_panel = QFrame(card)
+        shortcut_panel.setObjectName("OverviewHeroPanel")
+        shortcut_layout = QVBoxLayout(shortcut_panel)
+        shortcut_layout.setContentsMargins(18, 18, 18, 18)
+        shortcut_layout.setSpacing(12)
+
+        shortcut_label = QLabel("Launcher Shortcut", shortcut_panel)
+        shortcut_label.setObjectName("CardTitle")
+        shortcut_layout.addWidget(shortcut_label)
+
+        shortcut_caption = QLabel("Bring Shelf forward instantly, then get out of the way.", shortcut_panel)
+        shortcut_caption.setObjectName("CardSubtitle")
+        shortcut_caption.setWordWrap(True)
+        shortcut_layout.addWidget(shortcut_caption)
+
+        chip_row = QHBoxLayout()
+        chip_row.setSpacing(10)
+        self.shortcut_chips_host = QHBoxLayout()
+        self.shortcut_chips_host.setSpacing(10)
+        chip_row.addLayout(self.shortcut_chips_host)
+        chip_row.addStretch(1)
+        shortcut_layout.addLayout(chip_row)
+
+        self.overview_shortcut_summary = QLabel("Default: Cmd+Option+S", shortcut_panel)
+        self.overview_shortcut_summary.setObjectName("CardSubtitle")
+        self.overview_shortcut_summary.setWordWrap(True)
+        shortcut_layout.addWidget(self.overview_shortcut_summary)
+
+        shortcut_actions = QHBoxLayout()
+        shortcut_actions.setSpacing(10)
+        edit_shortcut = QPushButton("Customize Shortcut", shortcut_panel)
+        edit_shortcut.setObjectName("PrimaryButton")
+        edit_shortcut.clicked.connect(lambda: self._select_section(self._section_indexes["application"]))
+        shortcut_actions.addWidget(edit_shortcut)
+
+        reset_shortcut = QPushButton("Reset to Default", shortcut_panel)
+        reset_shortcut.setObjectName("GhostButton")
+        reset_shortcut.clicked.connect(self.reset_launcher_shortcut)
+        shortcut_actions.addWidget(reset_shortcut)
+        shortcut_actions.addStretch(1)
+        shortcut_layout.addLayout(shortcut_actions)
+        layout.addWidget(shortcut_panel, 5)
+
+        health_panel = QFrame(card)
+        health_panel.setObjectName("OverviewHeroPanel")
+        health_layout = QVBoxLayout(health_panel)
+        health_layout.setContentsMargins(18, 18, 18, 18)
+        health_layout.setSpacing(12)
+
+        health_title = QLabel("Library Pulse", health_panel)
+        health_title.setObjectName("CardTitle")
+        health_layout.addWidget(health_title)
+
+        health_caption = QLabel("Indexing state, queue pressure, and recent failures at a glance.", health_panel)
+        health_caption.setObjectName("CardSubtitle")
+        health_caption.setWordWrap(True)
+        health_layout.addWidget(health_caption)
+
+        stats_row = QHBoxLayout()
+        stats_row.setSpacing(10)
+        self.summary_indexed_value, indexed_card = self._make_stat_card(health_panel, "Indexed\nfiles")
+        self.summary_queued_value, queued_card = self._make_stat_card(health_panel, "Queued\nfiles")
+        self.summary_failures_value, failures_card = self._make_stat_card(health_panel, "Failures\ndetected")
+        stats_row.addWidget(indexed_card)
+        stats_row.addWidget(queued_card)
+        stats_row.addWidget(failures_card)
+        health_layout.addLayout(stats_row)
+
+        footer = QHBoxLayout()
+        footer.setSpacing(12)
+        self.health_status_label = QLabel("● Shelf is healthy and up to date", health_panel)
+        self.health_status_label.setObjectName("StatusOkay")
+        self.health_status_label.setWordWrap(True)
+        footer.addWidget(self.health_status_label, 1)
+
+        details_button = QPushButton("View Library Health", health_panel)
+        details_button.setObjectName("GhostButton")
+        details_button.clicked.connect(lambda: self._select_section(self._section_indexes["health"]))
+        footer.addWidget(details_button)
+        health_layout.addLayout(footer)
+        layout.addWidget(health_panel, 6)
+        return card
 
     def _build_overview_shortcut_card(self, parent: QWidget) -> QFrame:
         card = QFrame(parent)
@@ -901,7 +1037,7 @@ class SettingsDialog(QDialog):
         title.setObjectName("CardTitle")
         layout.addWidget(title)
 
-        caption = QLabel("Use this shortcut to show or hide Shelf from anywhere while the app is running.", card)
+        caption = QLabel("Keep search one gesture away while the app stays quietly available in the menu bar.", card)
         caption.setObjectName("CardSubtitle")
         caption.setWordWrap(True)
         layout.addWidget(caption)
@@ -950,10 +1086,10 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        title = QLabel("Health Summary", card)
+        title = QLabel("Library Pulse", card)
         title.setObjectName("CardTitle")
         layout.addWidget(title)
-        subtitle = QLabel("Live status of indexing and system health.", card)
+        subtitle = QLabel("The fastest read on whether Shelf is current, queued, or asking for attention.", card)
         subtitle.setObjectName("CardSubtitle")
         layout.addWidget(subtitle)
 
@@ -987,11 +1123,11 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        title = QLabel("Monitored Folders", card)
+        title = QLabel("Indexed Territories", card)
         title.setObjectName("CardTitle")
         layout.addWidget(title)
 
-        subtitle = QLabel("Folders being indexed and watched for changes.", card)
+        subtitle = QLabel("The local places Shelf is allowed to scan, index, and reconcile in the background.", card)
         subtitle.setObjectName("CardSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
@@ -1031,11 +1167,11 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        title = QLabel("Maintenance Commands", card)
+        title = QLabel("Maintenance Console", card)
         title.setObjectName("CardTitle")
         layout.addWidget(title)
 
-        subtitle = QLabel("Run common maintenance operations and send output to the Maintenance section.", card)
+        subtitle = QLabel("Run status checks, audits, and rebuilds while keeping the output inspectable.", card)
         subtitle.setObjectName("CardSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
@@ -1066,7 +1202,7 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        title = QLabel("Reindex", card)
+        title = QLabel("Targeted Reindex", card)
         title.setObjectName("CardTitle")
         layout.addWidget(title)
 
@@ -1127,7 +1263,7 @@ class SettingsDialog(QDialog):
         layout.setSpacing(14)
 
         header = QHBoxLayout()
-        title = QLabel("Recent Failures", card)
+        title = QLabel("Recent Failure Feed", card)
         title.setObjectName("CardTitle")
         header.addWidget(title)
         header.addStretch(1)
@@ -1138,7 +1274,7 @@ class SettingsDialog(QDialog):
         header.addWidget(details_button)
         layout.addLayout(header)
 
-        subtitle = QLabel("Latest parser or indexing issues surfaced by Shelf.", card)
+        subtitle = QLabel("Recent parser or worker issues, kept visible without interrupting search.", card)
         subtitle.setObjectName("CardSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
@@ -1214,92 +1350,125 @@ class SettingsDialog(QDialog):
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
-        shortcut_card = QFrame(content)
-        shortcut_card.setObjectName("SettingsCard")
-        shortcut_layout = QVBoxLayout(shortcut_card)
-        shortcut_layout.setContentsMargins(20, 20, 20, 20)
-        shortcut_layout.setSpacing(14)
-        layout.addWidget(shortcut_card)
+        top_grid = QGridLayout()
+        top_grid.setHorizontalSpacing(16)
+        top_grid.setVerticalSpacing(16)
+        layout.addLayout(top_grid)
 
-        shortcut_label = QLabel("Launcher shortcut", shortcut_card)
-        shortcut_label.setObjectName("Eyebrow")
+        shortcut_card = QFrame(content)
+        shortcut_card.setObjectName("SettingsSplitPane")
+        shortcut_layout = QVBoxLayout(shortcut_card)
+        shortcut_layout.setContentsMargins(22, 22, 22, 22)
+        shortcut_layout.setSpacing(16)
+        top_grid.addWidget(shortcut_card, 0, 0)
+
+        shortcut_label = QLabel("Launcher Shortcut", shortcut_card)
+        shortcut_label.setObjectName("CardTitle")
         shortcut_layout.addWidget(shortcut_label)
 
         shortcut_caption = QLabel(
-            "Overview shows the current shortcut. Use this editor to customize the actual key combination.",
+            "Set the global key combination that brings the floating search bar forward.",
             shortcut_card,
         )
-        shortcut_caption.setObjectName("SectionCaption")
+        shortcut_caption.setObjectName("CardSubtitle")
         shortcut_caption.setWordWrap(True)
         shortcut_layout.addWidget(shortcut_caption)
 
-        shortcut_row = QHBoxLayout()
+        shortcut_editor_row = QFrame(shortcut_card)
+        shortcut_editor_row.setObjectName("SettingsRow")
+        shortcut_row = QHBoxLayout(shortcut_editor_row)
+        shortcut_row.setContentsMargins(14, 14, 14, 14)
+        shortcut_row.setSpacing(10)
         self.launcher_shortcut_input = QKeySequenceEdit(
             QKeySequence(self.settings.launcher_shortcut or DEFAULT_LAUNCH_SHORTCUT),
-            content,
+            shortcut_editor_row,
         )
         self.launcher_shortcut_input.setObjectName("PathInput")
         self.launcher_shortcut_input.editingFinished.connect(self.save_launcher_shortcut)
         shortcut_row.addWidget(self.launcher_shortcut_input, 1)
 
-        reset_shortcut = QPushButton("Reset Default", content)
+        reset_shortcut = QPushButton("Reset Default", shortcut_editor_row)
         reset_shortcut.setObjectName("GhostButton")
         reset_shortcut.clicked.connect(self.reset_launcher_shortcut)
         shortcut_row.addWidget(reset_shortcut)
-        shortcut_layout.addLayout(shortcut_row)
+        shortcut_layout.addWidget(shortcut_editor_row)
+        shortcut_layout.addStretch(1)
 
         types_card = QFrame(content)
-        types_card.setObjectName("SettingsCard")
+        types_card.setObjectName("SettingsSplitPane")
         types_layout = QVBoxLayout(types_card)
-        types_layout.setContentsMargins(20, 20, 20, 20)
-        types_layout.setSpacing(12)
-        layout.addWidget(types_card)
+        types_layout.setContentsMargins(22, 22, 22, 22)
+        types_layout.setSpacing(14)
+        top_grid.addWidget(types_card, 0, 1)
 
-        types_label = QLabel("Indexed document types", tab)
-        types_label.setObjectName("Eyebrow")
+        types_label = QLabel("Indexed Document Types", types_card)
+        types_label.setObjectName("CardTitle")
         types_layout.addWidget(types_label)
 
         types_caption = QLabel(
             "Choose which document formats Shelf indexes. If you change these selections, Shelf can reindex to add or remove matching files.",
-            tab,
+            types_card,
         )
-        types_caption.setObjectName("SectionCaption")
+        types_caption.setObjectName("CardSubtitle")
         types_caption.setWordWrap(True)
         types_layout.addWidget(types_caption)
 
+        types_grid = QGridLayout()
+        types_grid.setHorizontalSpacing(18)
+        types_grid.setVerticalSpacing(8)
         self.document_type_checkboxes: dict[str, QCheckBox] = {}
-        for extension, label in DOCUMENT_TYPE_LABELS.items():
-            checkbox = QCheckBox(f"{label} ({extension})", content)
+        for index, (extension, label) in enumerate(DOCUMENT_TYPE_LABELS.items()):
+            checkbox = QCheckBox(f"{label} ({extension})", types_card)
             checkbox.setObjectName("DocumentTypeCheckbox")
             checkbox.setChecked(extension in set(self.settings.enabled_extensions))
             self.document_type_checkboxes[extension] = checkbox
-            types_layout.addWidget(checkbox)
+            types_grid.addWidget(checkbox, index // 2, index % 2)
+        types_layout.addLayout(types_grid)
 
-        apply_types_button = QPushButton("Apply document type changes", content)
+        apply_types_button = QPushButton("Apply document type changes", types_card)
         apply_types_button.setObjectName("PrimaryButton")
         apply_types_button.clicked.connect(self.save_enabled_extensions)
         types_layout.addWidget(apply_types_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        top_grid.setColumnStretch(0, 4)
+        top_grid.setColumnStretch(1, 5)
 
         storage_card = QFrame(content)
-        storage_card.setObjectName("SettingsCard")
+        storage_card.setObjectName("SettingsSplitPane")
         storage_layout = QVBoxLayout(storage_card)
-        storage_layout.setContentsMargins(20, 20, 20, 20)
-        storage_layout.setSpacing(12)
+        storage_layout.setContentsMargins(22, 22, 22, 22)
+        storage_layout.setSpacing(14)
         layout.addWidget(storage_card)
+
+        storage_title = QLabel("Local Storage", storage_card)
+        storage_title.setObjectName("CardTitle")
+        storage_layout.addWidget(storage_title)
+
+        storage_caption = QLabel("Shelf keeps settings, search metadata, and indexes on this Mac.", storage_card)
+        storage_caption.setObjectName("CardSubtitle")
+        storage_caption.setWordWrap(True)
+        storage_layout.addWidget(storage_caption)
 
         for label, value in (
             ("Application Support", str(self.services.paths.root)),
             ("Settings File", str(self.services.paths.settings_file)),
             ("SQLite Database", str(self.services.paths.database_file)),
         ):
-            label_widget = QLabel(label, content)
-            label_widget.setObjectName("Eyebrow")
-            storage_layout.addWidget(label_widget)
+            path_row = QFrame(storage_card)
+            path_row.setObjectName("SettingsRow")
+            path_layout = QHBoxLayout(path_row)
+            path_layout.setContentsMargins(14, 12, 14, 12)
+            path_layout.setSpacing(14)
 
-            value_widget = QLineEdit(value, content)
+            label_widget = QLabel(label, path_row)
+            label_widget.setObjectName("Eyebrow")
+            label_widget.setMinimumWidth(170)
+            path_layout.addWidget(label_widget)
+
+            value_widget = QLineEdit(value, path_row)
             value_widget.setReadOnly(True)
             value_widget.setObjectName("PathInput")
-            storage_layout.addWidget(value_widget)
+            path_layout.addWidget(value_widget, 1)
+            storage_layout.addWidget(path_row)
 
         layout.addStretch(1)
         return tab
@@ -1319,7 +1488,15 @@ class SettingsDialog(QDialog):
         caption.setWordWrap(True)
         layout.addWidget(caption)
 
+        health_card = QFrame(content)
+        health_card.setObjectName("OverviewHeroCard")
+        health_layout = QHBoxLayout(health_card)
+        health_layout.setContentsMargins(22, 22, 22, 22)
+        health_layout.setSpacing(14)
+        layout.addWidget(health_card)
+
         pills_row = QHBoxLayout()
+        pills_row.setSpacing(12)
         self.documents_pill = self._make_pill()
         self.jobs_pill = self._make_pill()
         self.failures_pill = self._make_pill()
@@ -1327,17 +1504,38 @@ class SettingsDialog(QDialog):
         pills_row.addWidget(self.jobs_pill)
         pills_row.addWidget(self.failures_pill)
         pills_row.addStretch(1)
-        layout.addLayout(pills_row)
+
+        pulse_copy = QVBoxLayout()
+        pulse_copy.setSpacing(8)
+        pulse_title = QLabel("Indexing Pulse", health_card)
+        pulse_title.setObjectName("CardTitle")
+        pulse_copy.addWidget(pulse_title)
+        pulse_body = QLabel("Live counters stay compact here; detailed folder and worker diagnostics sit below.", health_card)
+        pulse_body.setObjectName("CardSubtitle")
+        pulse_body.setWordWrap(True)
+        pulse_copy.addWidget(pulse_body)
+        pulse_copy.addLayout(pills_row)
+        health_layout.addLayout(pulse_copy, 1)
+
+        refresh_button = QPushButton("Refresh health", health_card)
+        refresh_button.setObjectName("PrimaryButton")
+        refresh_button.clicked.connect(self.refresh_monitor_data)
+        health_layout.addWidget(refresh_button, alignment=Qt.AlignmentFlag.AlignTop)
+
+        diagnostic_grid = QGridLayout()
+        diagnostic_grid.setHorizontalSpacing(16)
+        diagnostic_grid.setVerticalSpacing(16)
+        layout.addLayout(diagnostic_grid)
 
         folders_card = QFrame(content)
-        folders_card.setObjectName("SettingsCard")
+        folders_card.setObjectName("SettingsSplitPane")
         folders_layout = QVBoxLayout(folders_card)
-        folders_layout.setContentsMargins(20, 20, 20, 20)
+        folders_layout.setContentsMargins(22, 22, 22, 22)
         folders_layout.setSpacing(12)
-        layout.addWidget(folders_card)
+        diagnostic_grid.addWidget(folders_card, 0, 0)
 
-        folders_title = QLabel("Coverage and access", folders_card)
-        folders_title.setObjectName("Eyebrow")
+        folders_title = QLabel("Coverage and Access", folders_card)
+        folders_title.setObjectName("CardTitle")
         folders_layout.addWidget(folders_title)
 
         self.folder_audit_summary = QLabel("", folders_card)
@@ -1350,34 +1548,35 @@ class SettingsDialog(QDialog):
         folders_layout.addWidget(self.folder_audit_list)
 
         overview_card = QFrame(content)
-        overview_card.setObjectName("SettingsCard")
+        overview_card.setObjectName("SettingsSplitPane")
         overview_layout = QVBoxLayout(overview_card)
-        overview_layout.setContentsMargins(20, 20, 20, 20)
+        overview_layout.setContentsMargins(22, 22, 22, 22)
         overview_layout.setSpacing(12)
-        layout.addWidget(overview_card, 1)
+        diagnostic_grid.addWidget(overview_card, 0, 1)
+
+        overview_title = QLabel("Worker Snapshot", overview_card)
+        overview_title.setObjectName("CardTitle")
+        overview_layout.addWidget(overview_title)
 
         self.overview_text = QPlainTextEdit(content)
         self.overview_text.setReadOnly(True)
         overview_layout.addWidget(self.overview_text, 1)
 
-        failures_title = QLabel("Recent failures", content)
-        failures_title.setObjectName("Eyebrow")
-        layout.addWidget(failures_title)
-
         failures_card = QFrame(content)
-        failures_card.setObjectName("SettingsCard")
+        failures_card.setObjectName("SettingsSplitPane")
         failures_layout = QVBoxLayout(failures_card)
-        failures_layout.setContentsMargins(20, 20, 20, 20)
+        failures_layout.setContentsMargins(22, 22, 22, 22)
         failures_layout.setSpacing(12)
-        layout.addWidget(failures_card, 1)
+        diagnostic_grid.addWidget(failures_card, 1, 0, 1, 2)
+
+        failures_title = QLabel("Recent Failures", failures_card)
+        failures_title.setObjectName("CardTitle")
+        failures_layout.addWidget(failures_title)
 
         self.failures_list = QListWidget(content)
         failures_layout.addWidget(self.failures_list, 1)
-
-        refresh_button = QPushButton("Refresh health", content)
-        refresh_button.setObjectName("PrimaryButton")
-        refresh_button.clicked.connect(self.refresh_monitor_data)
-        layout.addWidget(refresh_button, alignment=Qt.AlignmentFlag.AlignRight)
+        diagnostic_grid.setColumnStretch(0, 5)
+        diagnostic_grid.setColumnStretch(1, 4)
 
         self.refresh_monitor_data()
         return tab
@@ -1397,29 +1596,42 @@ class SettingsDialog(QDialog):
         caption.setWordWrap(True)
         layout.addWidget(caption)
 
-        summary_card = QFrame(content)
-        summary_card.setObjectName("SettingsCard")
-        summary_layout = QVBoxLayout(summary_card)
-        summary_layout.setContentsMargins(20, 20, 20, 20)
-        summary_layout.setSpacing(12)
-        layout.addWidget(summary_card)
+        command_strip = QFrame(content)
+        command_strip.setObjectName("OverviewHeroCard")
+        command_layout = QHBoxLayout(command_strip)
+        command_layout.setContentsMargins(22, 22, 22, 22)
+        command_layout.setSpacing(16)
+        layout.addWidget(command_strip)
 
-        summary_title = QLabel("Last command activity", summary_card)
-        summary_title.setObjectName("Eyebrow")
-        summary_layout.addWidget(summary_title)
+        summary_copy = QVBoxLayout()
+        summary_copy.setSpacing(8)
+        summary_title = QLabel("Command Output", command_strip)
+        summary_title.setObjectName("CardTitle")
+        summary_copy.addWidget(summary_title)
 
         summary_body = QLabel(
             "Use the Overview section for status, audits, rebuilds, and reindex actions. The latest JSON output is preserved here.",
-            summary_card,
+            command_strip,
         )
-        summary_body.setObjectName("SectionCaption")
+        summary_body.setObjectName("CardSubtitle")
         summary_body.setWordWrap(True)
-        summary_layout.addWidget(summary_body)
+        summary_copy.addWidget(summary_body)
+        command_layout.addLayout(summary_copy, 1)
+
+        status_button = QPushButton("Run Status", command_strip)
+        status_button.setObjectName("PrimaryButton")
+        status_button.clicked.connect(lambda _checked=False: self.run_command("status"))
+        command_layout.addWidget(status_button, alignment=Qt.AlignmentFlag.AlignTop)
+
+        audit_button = QPushButton("Run Audit", command_strip)
+        audit_button.setObjectName("GhostButton")
+        audit_button.clicked.connect(lambda _checked=False: self.run_command("audit"))
+        command_layout.addWidget(audit_button, alignment=Qt.AlignmentFlag.AlignTop)
 
         output_card = QFrame(content)
-        output_card.setObjectName("SettingsCard")
+        output_card.setObjectName("SettingsSplitPane")
         output_layout = QVBoxLayout(output_card)
-        output_layout.setContentsMargins(20, 20, 20, 20)
+        output_layout.setContentsMargins(22, 22, 22, 22)
         output_layout.setSpacing(12)
         layout.addWidget(output_card, 1)
 
