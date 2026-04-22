@@ -3,7 +3,7 @@
 - Status: `Done`
 - Priority: `P0`
 - Depends On: `003`, `004`, `009`, `015`
-- Last Updated: `2026-04-21`
+- Last Updated: `2026-04-22`
 
 ## Objective
 
@@ -59,6 +59,7 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 - 2026-04-21 overview dashboard refresh: adapted the AI mock into a real PySide6 overview dashboard with shortcut chips, live health stats, monitored-folder and maintenance cards, sidebar status, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py tests/test_search.py` plus `uv run pytest`
 - 2026-04-21 settings cleanup refresh: removed duplicated overview controls in favor of a true dashboard, aligned horizontal and vertical scrollbar styling, added configurable document-type settings with real TXT/Markdown parser support, prompted for reindex on document-type changes, and re-ran `uv run pytest`
 - 2026-04-21 resize and tray refresh: added tray-based hide/minimize behavior for the launcher, enabled edge resizing for the floating search window and settings dialog, made settings pages responsive and scrollable instead of clipping, refined the settings close control, and re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py`
+- 2026-04-22 results popup polish refresh: softened the results shell/card boundaries, tuned popup shadow and spacing, made popup height grow with result count and cap at usable screen height, and re-ran `uv run pytest tests/test_search.py tests/test_ui_shell.py`
 
 ## Risks and Notes
 

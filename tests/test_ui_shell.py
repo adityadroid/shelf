@@ -4,12 +4,12 @@ from types import SimpleNamespace
 
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QLabel, QKeySequenceEdit, QScrollArea, QToolButton
+from PySide6.QtWidgets import QFrame, QLabel, QKeySequenceEdit, QScrollArea, QToolButton
 
 from shelf.core.application import AppStatus, FailureRecord
 from shelf.core.models import AppSettings, MonitoredFolder
 from shelf.indexing.models import SearchResult
-from shelf.ui.main_window import ICON_PATH, MainWindow, SettingsDialog
+from shelf.ui.main_window import ICON_PATH, MainWindow, SearchResultsDialog, SettingsDialog
 
 
 class StubSettingsService:
@@ -159,6 +159,65 @@ def test_main_window_shows_live_results_popup(qtbot):
     window.toggle_launcher_window()
     assert window.isVisible()
     assert window.y() >= 0
+
+
+def test_results_popup_height_tracks_result_count_and_caps_to_available_screen(qtbot):
+    controller = StubController()
+    parent = QFrame()
+    parent.resize(760, 120)
+    parent.move(120, 120)
+    qtbot.addWidget(parent)
+    parent.show()
+
+    dialog = SearchResultsDialog(controller, parent)
+    qtbot.addWidget(dialog)
+
+    few_results = [
+        SearchResult(
+            document_id="doc-1",
+            path="/tmp/alpha-report.pdf",
+            file_name="alpha-report.pdf",
+            extension=".pdf",
+            snippet="project alpha roadmap",
+            modified_at=1713517200.0,
+            score=1.0,
+            source="fts",
+        )
+    ]
+    many_results = [
+        SearchResult(
+            document_id=f"doc-{index}",
+            path=f"/tmp/result-{index}.pdf",
+            file_name=f"result-{index}.pdf",
+            extension=".pdf",
+            snippet="project alpha roadmap",
+            modified_at=1713517200.0,
+            score=1.0,
+            source="fts",
+        )
+        for index in range(14)
+    ]
+
+    dialog.show_for_query(parent, "alpha", few_results)
+    qtbot.waitUntil(dialog.isVisible)
+    few_height = dialog.height()
+    expected_few_height = dialog._desired_height(parent)
+
+    dialog.show_for_query(parent, "alpha", many_results)
+    many_height = dialog.height()
+    expected_many_height = dialog._desired_height(parent)
+
+    origin = parent.mapToGlobal(QPoint(0, parent.height() + 6))
+    screen = parent.screen()
+    assert screen is not None
+    available_bottom = screen.availableGeometry().bottom() - origin.y() + 1
+    max_expected_height = max(dialog.MIN_HEIGHT, available_bottom - dialog.SCREEN_BOTTOM_MARGIN)
+
+    assert few_height == expected_few_height
+    assert many_height == expected_many_height
+    assert few_height >= dialog.MIN_HEIGHT
+    assert many_height > few_height
+    assert many_height == max_expected_height
 
 
 def test_settings_dialog_surfaces_maintenance_commands(qtbot):

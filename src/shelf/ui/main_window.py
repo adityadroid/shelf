@@ -83,24 +83,25 @@ QFrame#ComposerShell {
 QFrame#ResultsShell {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(15, 23, 42, 0.96),
-        stop: 1 rgba(30, 41, 59, 0.96)
+        stop: 0 rgba(15, 23, 42, 0.9),
+        stop: 0.55 rgba(21, 31, 51, 0.92),
+        stop: 1 rgba(30, 41, 59, 0.88)
     );
-    border: 1px solid rgba(96, 165, 250, 0.24);
-    border-radius: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 28px;
 }
 QFrame#ResultCard {
-    background: rgba(51, 65, 85, 0.42);
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    border-radius: 16px;
+    background: rgba(30, 41, 59, 0.42);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 14px;
 }
 QFrame#ResultCard[active="true"] {
-    background: rgba(37, 99, 235, 0.22);
-    border: 1px solid rgba(96, 165, 250, 0.36);
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.28);
 }
 QFrame#ResultCard:hover, QFrame#GlassPanel:hover, QFrame#EmptyCard:hover {
-    background: rgba(51, 65, 85, 0.56);
-    border: 1px solid rgba(125, 211, 252, 0.22);
+    background: rgba(51, 65, 85, 0.48);
+    border: 1px solid rgba(125, 211, 252, 0.16);
 }
 QFrame#SettingsShell {
     background: qlineargradient(
@@ -227,9 +228,9 @@ QLabel#PathText {
     font-size: 10px;
 }
 QPushButton#RevealButton {
-    background: rgba(37, 99, 235, 0.18);
-    border: 1px solid rgba(96, 165, 250, 0.22);
-    border-radius: 12px;
+    background: rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(96, 165, 250, 0.18);
+    border-radius: 10px;
     color: #dbeafe;
     font-size: 12px;
     min-height: 32px;
@@ -237,7 +238,7 @@ QPushButton#RevealButton {
     padding: 0 12px;
 }
 QPushButton#RevealButton:hover {
-    background: rgba(37, 99, 235, 0.28);
+    background: rgba(37, 99, 235, 0.24);
 }
 QLabel#Pill {
     background: rgba(37, 99, 235, 0.18);
@@ -517,8 +518,8 @@ class SearchResultCard(QFrame):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 12, 12, 12)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 14, 14, 14)
+        layout.setSpacing(14)
 
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
@@ -1689,6 +1690,9 @@ class SettingsDialog(QDialog):
 
 
 class SearchResultsDialog(QDialog):
+    MIN_HEIGHT = 156
+    SCREEN_BOTTOM_MARGIN = 18
+
     def __init__(
         self,
         app_controller: ShelfApplication,
@@ -1720,14 +1724,14 @@ class SearchResultsDialog(QDialog):
         self.shell = QFrame(self)
         self.shell.setObjectName("ResultsShell")
         shell_layout = QVBoxLayout(self.shell)
-        shell_layout.setContentsMargins(16, 16, 16, 16)
+        shell_layout.setContentsMargins(18, 18, 18, 18)
         shell_layout.setSpacing(12)
         layout.addWidget(self.shell)
         effect = QGraphicsDropShadowEffect(self.shell)
-        effect.setBlurRadius(36)
-        effect.setOffset(0, 16)
+        effect.setBlurRadius(48)
+        effect.setOffset(0, 24)
         color = effect.color()
-        color.setAlpha(110)
+        color.setAlpha(80)
         effect.setColor(color)
         self.shell.setGraphicsEffect(effect)
 
@@ -1753,16 +1757,57 @@ class SearchResultsDialog(QDialog):
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll.setViewportMargins(0, 0, 10, 0)
+        self.scroll.setViewportMargins(0, 4, 10, 4)
         shell_layout.addWidget(self.scroll, 1)
 
         self.results_container = QWidget(self.scroll)
         self.results_layout = QVBoxLayout(self.results_container)
         self.results_layout.setContentsMargins(0, 0, 6, 0)
-        self.results_layout.setSpacing(10)
+        self.results_layout.setSpacing(12)
         self.scroll.setWidget(self.results_container)
         shell_layout.addWidget(self.status_bar)
         self.hide()
+
+    def _desired_height(self, parent: QWidget) -> int:
+        self.results_layout.activate()
+        self.results_container.adjustSize()
+        self.scroll.widget().adjustSize()
+        self.shell.layout().activate()
+
+        result_items_height = 0
+        if self.result_cards:
+            result_items_height = sum(card.sizeHint().height() for card in self.result_cards)
+            result_items_height += self.results_layout.spacing() * max(0, len(self.result_cards) - 1)
+        else:
+            first_item = self.results_layout.itemAt(0)
+            if first_item is not None and first_item.widget() is not None:
+                result_items_height = first_item.widget().sizeHint().height()
+
+        visible_sections = 4 + int(self.progress_bar.isVisible())
+        natural_height = (
+            self.layout().contentsMargins().top()
+            + self.layout().contentsMargins().bottom()
+            + self.shell.layout().contentsMargins().top()
+            + self.shell.layout().contentsMargins().bottom()
+            + self.title_label.sizeHint().height()
+            + self.subtitle_label.sizeHint().height()
+            + self.status_bar.sizeHint().height()
+            + result_items_height
+            + self.results_layout.contentsMargins().top()
+            + self.results_layout.contentsMargins().bottom()
+            + self.scroll.viewportMargins().top()
+            + self.scroll.viewportMargins().bottom()
+            + (self.progress_bar.sizeHint().height() if self.progress_bar.isVisible() else 0)
+            + (self.shell.layout().spacing() * max(0, visible_sections - 1))
+        )
+        origin = parent.mapToGlobal(QPoint(0, parent.height() + 6))
+        screen = parent.screen() or QGuiApplication.screenAt(origin) or QGuiApplication.primaryScreen()
+        if screen is None:
+            return max(self.MIN_HEIGHT, natural_height)
+
+        available_bottom = screen.availableGeometry().bottom() - origin.y() + 1
+        max_height = max(self.MIN_HEIGHT, available_bottom - self.SCREEN_BOTTOM_MARGIN)
+        return max(self.MIN_HEIGHT, min(natural_height, max_height))
 
     def open_result(self, path: str) -> None:
         self.app_controller.open_in_preview(path)
@@ -1856,7 +1901,7 @@ class SearchResultsDialog(QDialog):
     def show_for_query(self, parent: QWidget, query: str, results: list[SearchResult]) -> None:
         self.update_results(query, results)
         self.setFixedWidth(parent.width())
-        self.resize(parent.width(), 360)
+        self.resize(parent.width(), self._desired_height(parent))
         self.anchor_below(parent)
         self.show()
         self.raise_()
@@ -2145,7 +2190,8 @@ class MainWindow(QMainWindow):
 
     def _show_results_popup_loading(self) -> None:
         self.results_popup.set_loading(True)
-        self.results_popup.resize(self.composer_shell.width(), self.results_popup.height())
+        self.results_popup.setFixedWidth(self.composer_shell.width())
+        self.results_popup.resize(self.composer_shell.width(), self.results_popup._desired_height(self.composer_shell))
         self.results_popup.anchor_below(self.composer_shell)
         self.results_popup.show()
         self.results_popup.raise_()
@@ -2317,7 +2363,11 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         if self.results_popup.isVisible():
-            self.results_popup.resize(self.composer_shell.width(), self.results_popup.height())
+            self.results_popup.setFixedWidth(self.composer_shell.width())
+            self.results_popup.resize(
+                self.composer_shell.width(),
+                self.results_popup._desired_height(self.composer_shell),
+            )
             self.results_popup.anchor_below(self.composer_shell)
 
     def closeEvent(self, event) -> None:  # noqa: N802
