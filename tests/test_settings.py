@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from shelf.core.models import DEFAULT_ENABLED_EXTENSIONS, DEFAULT_LAUNCH_SHORTCUT
+from shelf.core.models import DEFAULT_ENABLED_EXTENSIONS, DEFAULT_LAUNCH_SHORTCUT, DEFAULT_UI_TRANSPARENCY
 from shelf.core.settings import SettingsService
 from shelf.core.paths import AppPaths
 
@@ -17,6 +17,8 @@ def test_settings_create_defaults(tmp_path):
     assert len(settings.monitored_folders) == 3
     assert settings.launcher_shortcut == DEFAULT_LAUNCH_SHORTCUT
     assert settings.enabled_extensions == list(DEFAULT_ENABLED_EXTENSIONS)
+    assert settings.dark_mode is False
+    assert settings.ui_transparency == DEFAULT_UI_TRANSPARENCY
     assert paths.settings_file.exists()
 
 
@@ -27,6 +29,8 @@ def test_settings_round_trip(tmp_path):
     settings.onboarding_completed = True
     settings.launcher_shortcut = "Meta+Shift+Space"
     settings.enabled_extensions = [".pdf", ".txt", ".md"]
+    settings.dark_mode = True
+    settings.ui_transparency = 84
 
     service.save(settings)
     reloaded = service.load()
@@ -34,6 +38,8 @@ def test_settings_round_trip(tmp_path):
     assert reloaded.onboarding_completed is True
     assert reloaded.launcher_shortcut == "Meta+Shift+Space"
     assert reloaded.enabled_extensions == [".pdf", ".txt", ".md"]
+    assert reloaded.dark_mode is True
+    assert reloaded.ui_transparency == 84
     assert [folder.path for folder in reloaded.monitored_folders] == [
         folder.path for folder in settings.monitored_folders
     ]

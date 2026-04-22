@@ -15,6 +15,7 @@ DOCUMENT_TYPE_LABELS: dict[str, str] = {
 SUPPORTED_EXTENSIONS = tuple(DOCUMENT_TYPE_LABELS)
 DEFAULT_ENABLED_EXTENSIONS = SUPPORTED_EXTENSIONS
 DEFAULT_LAUNCH_SHORTCUT = "Meta+Alt+S"
+DEFAULT_UI_TRANSPARENCY = 96
 
 
 def normalize_enabled_extensions(values: list[str] | tuple[str, ...] | None) -> list[str]:
@@ -50,4 +51,6 @@ class AppSettings:
     monitored_folders: list[MonitoredFolder] = field(default_factory=list)
     enabled_extensions: list[str] = field(default_factory=lambda: list(DEFAULT_ENABLED_EXTENSIONS))
     launcher_shortcut: str = DEFAULT_LAUNCH_SHORTCUT
+    dark_mode: bool = False
+    ui_transparency: int = DEFAULT_UI_TRANSPARENCY
     last_error: str | None = None

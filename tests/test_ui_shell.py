@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QFrame, QLabel, QKeySequenceEdit, QScrollArea, QToolButton
+from PySide6.QtWidgets import QCheckBox, QFrame, QLabel, QKeySequenceEdit, QScrollArea, QSlider, QToolButton
 
 from shelf.core.application import AppStatus, FailureRecord
 from shelf.core.models import AppSettings, MonitoredFolder
@@ -40,7 +40,7 @@ class StubController:
             SearchResult(
                 document_id="doc-1",
                 path="/tmp/alpha-report.pdf",
-                file_name="alpha-report.pdf",
+                file_name="apps_0b709200db41a31_ad4bb6b9-04dd-4b67-85ea-0d0f7ea51c7b-full.txt",
                 extension=".pdf",
                 snippet="project alpha roadmap",
                 modified_at=1713517200.0,
@@ -114,7 +114,7 @@ def test_main_window_shows_live_results_popup(qtbot):
     qtbot.addWidget(window)
     window.show()
 
-    assert window.search_input.placeholderText() == "Search files using natural language or keywords"
+    assert window.search_input.placeholderText() == "Search documents by title, path, or text"
     assert window.windowTitle() == "Shelf"
     assert window.windowFlags() & Qt.WindowType.FramelessWindowHint
     assert window.statusBar().isHidden()
@@ -126,9 +126,9 @@ def test_main_window_shows_live_results_popup(qtbot):
     qtbot.wait(150)
     assert controller.live_search_queries == []
     assert window.search_input.text().startswith("a")
-    assert window.search_input.hasFocus()
+    qtbot.waitUntil(window.search_input.hasFocus)
 
-    qtbot.keyClicks(window.search_input, "lpha")
+    window.search_input.setText("alpha")
     qtbot.waitUntil(lambda: controller.live_search_queries == ["alpha"])
     qtbot.waitUntil(lambda: window.results_popup.isVisible())
     qtbot.waitUntil(lambda: len(window.results_popup.result_cards) == 1)
@@ -136,6 +136,12 @@ def test_main_window_shows_live_results_popup(qtbot):
     assert window.search_input.hasFocus()
     assert window.results_popup.width() == window.composer_shell.width()
     assert window.results_popup.result_cards[0].reveal_button.text() == "Reveal"
+    assert not window.results_popup.result_cards[0].reveal_button.icon().isNull()
+    card = window.results_popup.result_cards[0]
+    reveal_right = card.reveal_button.mapTo(window.results_popup.scroll.viewport(), card.reveal_button.rect().topRight()).x()
+    assert reveal_right <= window.results_popup.scroll.viewport().width() - window.results_popup.RIGHT_SAFE_INSET
+    title_labels = [label for label in card.findChildren(QLabel) if label.objectName() == "ResultTitle"]
+    assert title_labels and "\n" in title_labels[0].text()
     path_labels = window.results_popup.result_cards[0].findChildren(QLabel)
     assert any(label.text() == "/tmp" for label in path_labels)
 
@@ -234,23 +240,36 @@ def test_settings_dialog_surfaces_maintenance_commands(qtbot):
 
     assert dialog.windowTitle() == "Shelf Settings"
     labels = dialog.findChildren(QLabel)
-    assert any(label.text() == "Configure Shelf" for label in labels)
+    assert any(label.text() == "SHELF" for label in labels)
     assert dialog.folder_list.count() == 1
     assert dialog.documents_pill.text() == "12 indexed"
     assert dialog.failures_list.count() == 1
     shortcut_input = dialog.findChild(QKeySequenceEdit)
     assert shortcut_input is not None
     assert shortcut_input.keySequence().toString(QKeySequence.SequenceFormat.PortableText) == "Meta+Alt+S"
+    transparency_slider = dialog.findChild(QSlider, "TransparencySlider")
+    assert transparency_slider is not None
+    assert transparency_slider.value() == 96
+    dark_toggle = dialog.findChild(QCheckBox, "AppearanceToggle")
+    assert dark_toggle is not None
+    assert dark_toggle.isChecked() is False
 
     shortcut_input.setKeySequence(QKeySequence("Meta+Shift+Space"))
     dialog.save_launcher_shortcut()
     assert settings.launcher_shortcut == "Meta+Shift+Space"
 
+    dialog.dark_mode_toggle.setChecked(True)
+    dialog.transparency_slider.setValue(84)
+    dialog.save_appearance_settings()
+    assert settings.dark_mode is True
+    assert settings.ui_transparency == 84
+    assert dialog.theme_state_label.text() == "Dark surfaces are on"
+
     dialog.run_command("status")
 
     assert controller.maintenance_calls == [("status", None)]
     assert '"command": "status"' in dialog.maintenance_output.toPlainText()
-    assert refresh_calls == ["refresh", "refresh"]
+    assert refresh_calls == ["refresh", "refresh", "refresh", "refresh"]
 
 
 def test_settings_dialog_can_resize_and_uses_refined_close_button(qtbot):

@@ -14,8 +14,45 @@ class OnboardingDialog(QDialog):
         self.setWindowTitle("Welcome to Shelf")
         self.setModal(True)
         self.resize(480, 320)
+        self.setStyleSheet(
+            """
+            QDialog {
+                background: #f8f7f3;
+                color: #2f2f2b;
+                font-family: "Geist Mono", "SF Mono", "Menlo", "Monaco";
+            }
+            QLabel {
+                color: #3f3f3a;
+                font-size: 13px;
+                line-height: 1.45;
+            }
+            QLabel#OnboardingTitle {
+                color: #2f2f2b;
+                font-size: 28px;
+                font-weight: 400;
+                letter-spacing: 0.08em;
+            }
+            QPushButton {
+                background: #2f2f2b;
+                border: 1px solid #2f2f2b;
+                border-radius: 0px;
+                color: #fbfaf7;
+                min-height: 36px;
+                padding: 0 18px;
+            }
+            QPushButton:hover {
+                background: #11110f;
+            }
+            """
+        )
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 28, 28, 24)
+        layout.setSpacing(16)
+
+        title = QLabel("SHELF", self)
+        title.setObjectName("OnboardingTitle")
+        layout.addWidget(title)
 
         intro = QLabel(
             "Shelf keeps a local search library for documents on this Mac. "
@@ -30,7 +67,7 @@ class OnboardingDialog(QDialog):
         types_label.setWordWrap(True)
         layout.addWidget(types_label)
 
-        folder_text = "\n".join(f"• {folder.path}" for folder in folders)
+        folder_text = "\n".join(f"- {folder.path}" for folder in folders)
         folders_label = QLabel(f"Default monitored folders:\n{folder_text}")
         folders_label.setWordWrap(True)
         folders_label.setAlignment(Qt.AlignmentFlag.AlignTop)

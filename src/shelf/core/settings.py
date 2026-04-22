@@ -9,6 +9,7 @@ from shelf.core.models import (
     AppSettings,
     DEFAULT_ENABLED_EXTENSIONS,
     DEFAULT_LAUNCH_SHORTCUT,
+    DEFAULT_UI_TRANSPARENCY,
     MonitoredFolder,
     normalize_enabled_extensions,
 )
@@ -17,6 +18,13 @@ from shelf.core.paths import AppPaths
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS_SCHEMA_VERSION = 1
+
+
+def _coerce_transparency(value: object) -> int:
+    try:
+        return max(70, min(100, int(value)))
+    except (TypeError, ValueError):
+        return DEFAULT_UI_TRANSPARENCY
 
 
 class SettingsService:
@@ -32,6 +40,8 @@ class SettingsService:
                 monitored_folders=build_default_folders(),
                 enabled_extensions=list(DEFAULT_ENABLED_EXTENSIONS),
                 launcher_shortcut=DEFAULT_LAUNCH_SHORTCUT,
+                dark_mode=False,
+                ui_transparency=DEFAULT_UI_TRANSPARENCY,
             )
             self.save(settings)
             return settings
@@ -46,6 +56,8 @@ class SettingsService:
                 monitored_folders=build_default_folders(),
                 enabled_extensions=list(DEFAULT_ENABLED_EXTENSIONS),
                 launcher_shortcut=DEFAULT_LAUNCH_SHORTCUT,
+                dark_mode=False,
+                ui_transparency=DEFAULT_UI_TRANSPARENCY,
                 last_error="Settings file was invalid and has been reset.",
             )
             self.save(settings)
@@ -68,6 +80,8 @@ class SettingsService:
             monitored_folders=folders,
             enabled_extensions=normalize_enabled_extensions(payload.get("enabled_extensions")),
             launcher_shortcut=payload.get("launcher_shortcut", DEFAULT_LAUNCH_SHORTCUT),
+            dark_mode=bool(payload.get("dark_mode", False)),
+            ui_transparency=_coerce_transparency(payload.get("ui_transparency", DEFAULT_UI_TRANSPARENCY)),
             last_error=payload.get("last_error"),
         )
 
