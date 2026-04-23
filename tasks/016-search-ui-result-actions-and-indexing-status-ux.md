@@ -3,7 +3,7 @@
 - Status: `Done`
 - Priority: `P0`
 - Depends On: `003`, `004`, `009`, `015`
-- Last Updated: `2026-04-22`
+- Last Updated: `2026-04-23`
 
 ## Objective
 
@@ -67,6 +67,7 @@ This is the primary user-visible value of Shelf. The product plan emphasizes ins
 - 2026-04-22 editorial minimal redesign refresh: replaced the loud dark glass palette with a portfolio-inspired light editorial system, flattened card and control radii, moved the UI copy toward calmer document-search language, aligned onboarding with the same style, and updated UI assertions for the new search/settings text. Re-ran `uv run pytest tests/test_ui_shell.py tests/test_search.py tests/test_settings.py` and `uv run pytest`.
 - 2026-04-22 appearance controls refresh: softened the editorial UI with balanced rounded corners, added native Qt icons to search results, navigation, and command controls, persisted dark mode and UI transparency settings, and added an Appearance panel with a dark-mode toggle plus transparency slider. Re-ran `uv run pytest tests/test_ui_shell.py tests/test_settings.py` and `uv run pytest`.
 - 2026-04-22 result row and Dock icon refresh: replaced label-glyph result actions with real monochrome pixmap icons, widened the Reveal action so result rows no longer truncate, regenerated the app icon with macOS-style optical padding, and updated the icon build script to emit the packaged `.icns`. Re-ran `uv run pytest tests/test_ui_shell.py`.
+- 2026-04-23 consecutive search responsiveness fix: allowed a newer live search to replace an in-flight stale search, kept stale failures from swallowing the latest queued query, and added a UI regression test for consecutive search recovery. Re-ran `uv run pytest tests/test_ui_shell.py` and `uv run pytest`.
 
 ## Risks and Notes
 

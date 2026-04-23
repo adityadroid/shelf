@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 
 from PySide6.QtCore import QPoint, Qt
@@ -88,6 +89,26 @@ class StubController:
         ]
 
 
+class ConsecutiveSearchController(StubController):
+    def live_search(self, query: str) -> list[SearchResult]:
+        self.live_search_queries.append(query)
+        if query == "alpha":
+            time.sleep(1.0)
+            raise RuntimeError("stale query failed")
+        return [
+            SearchResult(
+                document_id=f"doc-{query}",
+                path=f"/tmp/{query}-report.pdf",
+                file_name=f"{query}-report.pdf",
+                extension=".pdf",
+                snippet=f"project {query} roadmap",
+                modified_at=1713517200.0,
+                score=1.0,
+                source="fts",
+            )
+        ]
+
+
 def build_services_stub() -> SimpleNamespace:
     return SimpleNamespace(
         settings=StubSettingsService(),
@@ -165,6 +186,26 @@ def test_main_window_shows_live_results_popup(qtbot):
     window.toggle_launcher_window()
     assert window.isVisible()
     assert window.y() >= 0
+
+
+def test_live_search_recovers_when_consecutive_query_replaces_failing_search(qtbot):
+    services = build_services_stub()
+    settings = AppSettings(onboarding_completed=True)
+    controller = ConsecutiveSearchController()
+
+    window = MainWindow(services, settings, controller)
+    window._live_search_timer.setInterval(40)
+    qtbot.addWidget(window)
+    window.show()
+
+    window.search_input.setText("alpha")
+    qtbot.waitUntil(lambda: controller.live_search_queries == ["alpha"], timeout=1000)
+    window.search_input.setText("beta")
+
+    qtbot.waitUntil(lambda: controller.live_search_queries == ["alpha", "beta"], timeout=2000)
+    qtbot.waitUntil(lambda: len(window.results_popup.result_cards) == 1, timeout=2000)
+    assert window.results_popup.result_cards[0].result.file_name == "beta-report.pdf"
+    assert window.results_popup.progress_bar.isHidden()
 
 
 def test_results_popup_height_tracks_result_count_and_caps_to_available_screen(qtbot):

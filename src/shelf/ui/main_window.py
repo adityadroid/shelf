@@ -2377,7 +2377,7 @@ class MainWindow(QMainWindow):
         self._resize_start_global: QPoint | None = None
         self._is_quitting = False
         self._tray_message_shown = False
-        self._search_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="shelf-ui-search")
+        self._search_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="shelf-ui-search")
         self._live_search_timer = QTimer(self)
         self._live_search_timer.setInterval(380)
         self._live_search_timer.setSingleShot(True)
@@ -2658,7 +2658,9 @@ class MainWindow(QMainWindow):
             return
         self._show_results_popup_loading()
         if self._active_search is not None and not self._active_search.done():
-            return
+            if self._active_query == query:
+                return
+            self._active_search.cancel()
         self._active_query = query
         self._active_search = self._search_executor.submit(self.app_controller.live_search, query)
         QTimer.singleShot(25, self._poll_search_result)
@@ -2676,6 +2678,9 @@ class MainWindow(QMainWindow):
         try:
             results = future.result()
         except Exception as exc:  # pragma: no cover - defensive UI path
+            if self._active_query != (self._queued_query or ""):
+                self._queue_live_search()
+                return
             self.results_popup.set_loading(False)
             self.statusBar().showMessage(str(exc), 3000)
             return
