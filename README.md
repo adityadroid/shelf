@@ -19,9 +19,9 @@
 
 ## Demo
 
-<video src="docs/assets/shelf-demo.mp4" controls width="100%"></video>
+![Shelf demo](docs/assets/shelf-demo.gif)
 
-If your Markdown viewer does not render embedded video, open the demo directly:
+For the original video with playback controls, open the MP4 directly:
 [docs/assets/shelf-demo.mp4](docs/assets/shelf-demo.mp4).
 
 ## What Is Shelf?
